@@ -1,0 +1,95 @@
+/* Schedule History Notification System */
+
+/* Notification indicator container */
+.nav-notification-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Base notification dot styles */
+.nav-notification-dot {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 2px solid var(--header-bg, #101010);
+    z-index: 10;
+    transition: all 0.3s ease;
+}
+
+/* Notification colors based on order status */
+.nav-notification-dot.pending {
+    background-color: #FCD34D; /* Yellow */
+    box-shadow: 0 0 8px rgba(252, 212, 77, 0.6);
+}
+
+.nav-notification-dot.accepted {
+    background-color: #10B981; /* Green */
+    box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
+}
+
+.nav-notification-dot.completed {
+    background-color: #6B7280; /* Grey */
+    box-shadow: 0 0 8px rgba(107, 114, 128, 0.6);
+}
+
+/* Multiple notifications container */
+.nav-notification-multiple {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    display: flex;
+    gap: 2px;
+    z-index: 10;
+}
+
+.nav-notification-multiple .nav-notification-dot {
+    position: static;
+    width: 10px;
+    height: 10px;
+    border: 1.5px solid var(--header-bg, #101010);
+}
+
+/* Animation for new notifications */
+@keyframes notificationPulse {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.2);
+        opacity: 0.8;
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.nav-notification-dot.new {
+    animation: notificationPulse 2s ease-in-out 3;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .nav-notification-dot {
+        width: 10px;
+        height: 10px;
+        top: -3px;
+        right: -3px;
+    }
+    
+    .nav-notification-multiple {
+        top: -6px;
+        right: -6px;
+    }
+    
+    .nav-notification-multiple .nav-notification-dot {
+        width: 8px;
+        height: 8px;
+    }
+}
