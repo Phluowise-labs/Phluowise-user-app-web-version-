@@ -1042,9 +1042,12 @@
 
             // Set greeting
             const hour = new Date().getHours();
-            const userName = localStorage.getItem('userName') || 'USER';
+            const userName = localStorage.getItem('userName') || localStorage.getItem('firstName') || 'User';
             let greeting = hour < 12 ? 'Good Morning' : (hour < 18 ? 'Good Afternoon' : 'Good Evening');
-            document.getElementById('greetingText').textContent = `${greeting}, ${userName.toUpperCase()}`;
+            // Get first name only and capitalize properly
+            const firstName = userName.split(' ')[0];
+            const displayName = firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
+            document.getElementById('greetingText').textContent = `${greeting}, ${displayName}`;
 
             // Initialize pull-to-refresh functionality
             initPullToRefresh();
