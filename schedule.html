@@ -4049,12 +4049,152 @@
                     doc.text(`Page ${i} of ${totalPages}`, pageWidth - margin, yPosition + 12, { align: 'right' });
                 }
                 
-                doc.save(`order_${orderId}_${Date.now()}.pdf`);
+                // Mobile-optimized PDF save with fallback
+                if (isMobileDevice()) {
+                    // For mobile devices, try multiple approaches
+                    tryMobilePDFDownload(doc, `order_${orderId}_${Date.now()}.pdf`).then(() => {
+                        showMobileNotification('PDF download initiated! Check downloads or open in new tab.', 'success');
+                    }).catch(() => {
+                        // Fallback to standard download
+                        doc.save(`order_${orderId}_${Date.now()}.pdf`);
+                        showMobileNotification('PDF download initiated! Check downloads folder.', 'success');
+                    });
+                } else {
+                    // Standard desktop download
+                    doc.save(`order_${orderId}_${Date.now()}.pdf`);
+                }
                 
             } catch (error) {
                 console.error('Error generating PDF:', error);
-                alert('Failed to generate PDF. Please try again.');
+                showMobileNotification('Failed to generate PDF. Please try again.', 'error');
             }
+        }
+
+        // Mobile device detection
+        function isMobileDevice() {
+            return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
+                   (window.innerWidth <= 768 && 'ontouchstart' in window);
+        }
+        
+        // Mobile-specific PDF download with multiple fallbacks
+        async function tryMobilePDFDownload(doc, filename) {
+            return new Promise((resolve, reject) => {
+                try {
+                    // Method 1: Try standard download first
+                    doc.save(filename);
+                    
+                    // Method 2: Create blob and download link (fallback)
+                    setTimeout(() => {
+                        try {
+                            const pdfBlob = doc.output('blob');
+                            const url = URL.createObjectURL(pdfBlob);
+                            const downloadLink = document.createElement('a');
+                            downloadLink.href = url;
+                            downloadLink.download = filename;
+                            downloadLink.style.display = 'none';
+                            document.body.appendChild(downloadLink);
+                            downloadLink.click();
+                            document.body.removeChild(downloadLink);
+                            URL.revokeObjectURL(url);
+                            
+                            // Method 3: Open in new tab as additional fallback
+                            setTimeout(() => {
+                                try {
+                                    const newTab = window.open(url, '_blank');
+                                    if (newTab) {
+                                        newTab.focus();
+                                        showMobileNotification('PDF opened in new tab. Save from browser menu.', 'info');
+                                    }
+                                } catch (tabError) {
+                                    console.log('Could not open in new tab:', tabError);
+                                }
+                            }, 500);
+                            
+                            resolve();
+                        } catch (fallbackError) {
+                            console.log('Blob method failed, trying data URL:', fallbackError);
+                            
+                            // Method 4: Data URL fallback
+                            try {
+                                const dataUrl = doc.output('datauristring');
+                                const dataLink = document.createElement('a');
+                                dataLink.href = dataUrl;
+                                dataLink.download = filename;
+                                dataLink.style.display = 'none';
+                                dataLink.target = '_blank'; // Force new window
+                                document.body.appendChild(dataLink);
+                                dataLink.click();
+                                document.body.removeChild(dataLink);
+                                
+                                showMobileNotification('PDF download initiated. Check your downloads or browser tabs.', 'info');
+                                resolve();
+                            } catch (dataUrlError) {
+                                console.log('Data URL method failed:', dataUrlError);
+                                reject(dataUrlError);
+                            }
+                        }
+                    }, 1000);
+                    
+                } catch (error) {
+                    reject(error);
+                }
+            });
+        }
+        
+        // Mobile notification system
+        function showMobileNotification(message, type = 'info') {
+            // Remove existing notifications
+            const existingNotification = document.querySelector('.mobile-notification');
+            if (existingNotification) {
+                existingNotification.remove();
+            }
+            
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.className = `mobile-notification fixed top-4 left-4 right-4 z-50 p-4 rounded-lg backdrop-blur-xl border transition-all duration-300 transform translate-y-[-100px]`;
+            
+            // Style based on type
+            if (type === 'error') {
+                notification.className += ' bg-red-500/20 border-red-500/40 text-red-300';
+            } else if (type === 'success') {
+                notification.className += ' bg-green-500/20 border-green-500/40 text-green-300';
+            } else {
+                notification.className += ' bg-blue-500/20 border-blue-500/40 text-blue-300';
+            }
+            
+            notification.innerHTML = `
+                <div class="flex items-center gap-3">
+                    <div class="flex-shrink-0">
+                        ${type === 'error' ? '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>' : 
+                          type === 'success' ? '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>' :
+                          '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>'}
+                    </div>
+                    <div class="flex-1">
+                        <p class="text-sm font-medium">${message}</p>
+                    </div>
+                    <button onclick="this.parentElement.parentElement.remove()" class="flex-shrink-0 p-1 hover:bg-white/10 rounded">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // Animate in
+            setTimeout(() => {
+                notification.classList.remove('translate-y-[-100px]');
+                notification.classList.add('translate-y-0');
+            }, 100);
+            
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                if (notification.parentElement) {
+                    notification.classList.add('translate-y-[-100px]');
+                    setTimeout(() => notification.remove(), 300);
+                }
+            }, 5000);
         }
 
         // Message display functions
