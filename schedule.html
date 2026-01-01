@@ -4050,8 +4050,21 @@
                 }
                 
                 // Mobile-optimized PDF save with fallback
-                if (isMobileDevice()) {
-                    // For mobile devices, try multiple approaches
+                if (isAPKEnvironment()) {
+                    // APK environment - use specialized methods
+                    tryAPKPDFDownload(doc, `order_${orderId}_${Date.now()}.pdf`).then(() => {
+                        showMobileNotification('PDF processing for APK environment...', 'success');
+                    }).catch(() => {
+                        // Fallback to mobile methods
+                        tryMobilePDFDownload(doc, `order_${orderId}_${Date.now()}.pdf`).then(() => {
+                            showMobileNotification('PDF download initiated! Check downloads or open in new tab.', 'success');
+                        }).catch(() => {
+                            doc.save(`order_${orderId}_${Date.now()}.pdf`);
+                            showMobileNotification('PDF download initiated! Check downloads folder.', 'success');
+                        });
+                    });
+                } else if (isMobileDevice()) {
+                    // Regular mobile browser
                     tryMobilePDFDownload(doc, `order_${orderId}_${Date.now()}.pdf`).then(() => {
                         showMobileNotification('PDF download initiated! Check downloads or open in new tab.', 'success');
                     }).catch(() => {
@@ -4070,13 +4083,102 @@
             }
         }
 
-        // Mobile device detection
+        // Mobile device detection with APK detection
         function isMobileDevice() {
             return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
                    (window.innerWidth <= 768 && 'ontouchstart' in window);
         }
         
-        // Mobile-specific PDF download with multiple fallbacks
+        // APK detection (Android app environment)
+        function isAPKEnvironment() {
+            return window.cordova || window.PhoneGap || window.phonegap || 
+                   navigator.userAgent.includes('wv') || // WebView
+                   navigator.userAgent.includes('Android') && !navigator.userAgent.includes('Mobile Safari');
+        }
+        
+        // APK-specific PDF download methods
+        async function tryAPKPDFDownload(doc, filename) {
+            return new Promise((resolve, reject) => {
+                try {
+                    // Method 1: Try Cordova File Plugin if available
+                    if (window.cordova && window.cordova.file) {
+                        tryCordovaFileSave(doc, filename).then(resolve).catch(reject);
+                    } else {
+                        // Method 2: WebView download with share intent
+                        tryWebViewDownload(doc, filename).then(resolve).catch(reject);
+                    }
+                } catch (error) {
+                    reject(error);
+                }
+            });
+        }
+        
+        // Cordova file save method
+        async function tryCordovaFileSave(doc, filename) {
+            return new Promise((resolve, reject) => {
+                try {
+                    const pdfBlob = doc.output('blob');
+                    
+                    // Try to save to external storage
+                    window.cordova.file.externalRootDirectory.getDirectory('Download', {
+                        create: true,
+                        exclusive: false
+                    }, function(dirEntry) {
+                        dirEntry.getFile(filename, {
+                            create: true,
+                            exclusive: false
+                        }, function(fileEntry) {
+                            fileEntry.createWriter(function(fileWriter) {
+                                fileWriter.write(pdfBlob);
+                                fileWriter.onwriteend = function() {
+                                    showMobileNotification('PDF saved to Downloads folder!', 'success');
+                                    resolve();
+                                };
+                                fileWriter.onerror = reject;
+                            }, reject);
+                        }, reject);
+                    }, reject);
+                } catch (error) {
+                    reject(error);
+                }
+            });
+        }
+        
+        // WebView download with share intent
+        async function tryWebViewDownload(doc, filename) {
+            return new Promise((resolve, reject) => {
+                try {
+                    // Method 1: Data URL with share intent
+                    const dataUrl = doc.output('datauristring');
+                    
+                    // Create share link
+                    const shareLink = document.createElement('a');
+                    shareLink.href = dataUrl;
+                    shareLink.download = filename;
+                    shareLink.style.display = 'none';
+                    shareLink.target = '_blank';
+                    
+                    // Try to trigger Android share/download
+                    document.body.appendChild(shareLink);
+                    shareLink.click();
+                    document.body.removeChild(shareLink);
+                    
+                    // Method 2: Open in new tab for manual save
+                    setTimeout(() => {
+                        const newTab = window.open(dataUrl, '_blank');
+                        if (newTab) {
+                            showMobileNotification('PDF opened. Use browser menu to save/share.', 'info');
+                        } else {
+                            showMobileNotification('PDF ready. Check app downloads or use share menu.', 'info');
+                        }
+                        resolve();
+                    }, 1000);
+                    
+                } catch (error) {
+                    reject(error);
+                }
+            });
+        }
         async function tryMobilePDFDownload(doc, filename) {
             return new Promise((resolve, reject) => {
                 try {
