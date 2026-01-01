@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Phluowise - Services</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <link rel="stylesheet"
         href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&icon_names=verified" />
     <link rel="stylesheet" href="../public/css/notifications.css" />
@@ -2561,6 +2562,16 @@
                             </div>
                         </div>
 
+                        <!-- Download PDF Button -->
+                        <div class="w-full mb-6">
+                            <button onclick="downloadOrderPDF()" class="w-full py-4 rounded-lg backdrop-blur-xl bg-[#007ACC]/20 border border-[#007ACC]/40 text-white font-medium hover:bg-[#007ACC]/30 transition-all duration-300 shadow-lg flex items-center justify-center gap-2">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                                Download Order PDF
+                            </button>
+                        </div>
+
                         <!-- Rating Section -->
                         <div class="w-full">
                             <h4 class="review-section-title mb-4">Rate Phluowise</h4>
@@ -2775,7 +2786,7 @@
 
         // Toggle product selection in service card
         function toggleServiceProduct(element, companyName, productName, price, image, type) {
-            console.log('Toggling product:', { companyName, productName, price, type });
+            // console.log('Toggling product:', { companyName, productName, price, type });
 
             // Find the original product to get minQuantity
             const originalProduct = services.find(service => service.name === companyName)
@@ -2819,12 +2830,12 @@
             // Update selected count display
             updateServiceProductCount(companyName);
 
-            console.log('✅ Service products for', companyName, ':', serviceProducts[companyName]);
+            // console.log('✅ Service products for', companyName, ':', serviceProducts[companyName]);
         }
 
         // Toggle product selection in swipe view
         function toggleSwipeProduct(element, companyName, productName, price, image, type) {
-            console.log('Toggling swipe product:', { companyName, productName, price, type });
+            // console.log('Toggling swipe product:', { companyName, productName, price, type });
 
             // Find original product to get minQuantity
             const originalProduct = services.find(service => service.name === companyName)
@@ -2868,7 +2879,7 @@
             // Update selected count display
             updateServiceProductCount(companyName);
 
-            console.log('✅ Swipe products for', companyName, ':', serviceProducts[companyName]);
+            // console.log('✅ Swipe products for', companyName, ':', serviceProducts[companyName]);
         }
 
         // Update service product count display
@@ -2920,7 +2931,7 @@
                         };
                     },
                     (error) => {
-                        console.log('Location access denied');
+                        // console.log('Location access denied');
                     }
                 );
             }
@@ -3028,20 +3039,20 @@
 
         // Schedule order - Open bottom sheet
         function scheduleOrder(companyName) {
-            console.log('🔍 scheduleOrder() called for:', companyName);
+            // console.log('🔍 scheduleOrder() called for:', companyName);
             selectedCompany = companyName;
 
             // Get selected products for this company
             selectedProducts = [...serviceProducts[companyName]];
 
-            console.log('📦 Selected products:', selectedProducts);
+            // console.log('📦 Selected products:', selectedProducts);
 
             if (selectedProducts.length === 0) {
                 showError('Please select at least one product first');
                 return;
             }
 
-            console.log('✅ Products selected, starting schedule flow...');
+            // console.log('✅ Products selected, starting schedule flow...');
             startScheduleFlow();
         }
 
@@ -3076,7 +3087,7 @@
 
         // Schedule Flow Bottom Sheet
         function startScheduleFlow() {
-            console.log('🚀 Schedule Order button clicked - Starting complete flow...');
+            // console.log('🚀 Schedule Order button clicked - Starting complete flow...');
 
             // Reset to first step
             currentStep = 1;
@@ -3086,7 +3097,7 @@
             sheet.classList.add('active');
             content.classList.add('active');
             sheet.classList.remove('pointer-events-none');
-            console.log('✅ Schedule flow sheet opened');
+            // console.log('✅ Schedule flow sheet opened');
 
             // Load saved recipients
             loadSavedRecipients();
@@ -3105,7 +3116,7 @@
                 sheet.classList.remove('active');
                 sheet.classList.add('pointer-events-none');
             }, 300);
-            console.log('❌ Schedule flow sheet closed');
+            // console.log('❌ Schedule flow sheet closed');
             // Reset step
             currentStep = 1;
             updateStepIndicators();
@@ -4188,8 +4199,8 @@
         }
 
         function completeOrderFlow() {
-            console.log('📝 Order completed with rating:', userRating);
-            console.log('💾 Order data to save:', orderData);
+            // console.log('📝 Order completed with rating:', userRating);
+            // console.log('💾 Order data to save:', orderData);
 
             // Save order to localStorage
             saveOrderToHistory();
@@ -4228,13 +4239,13 @@
         // Save order to localStorage for schedule history
         function saveOrderToHistory() {
             try {
-                console.log('🚀 Starting to save order to schedule history...');
-                console.log('📦 Order data to save:', orderData);
+                // console.log('🚀 Starting to save order to schedule history...');
+                // console.log('📦 Order data to save:', orderData);
 
                 // Get existing orders from localStorage
                 let existingOrders = localStorage.getItem('phluowiseOrders');
                 let orders = existingOrders ? JSON.parse(existingOrders) : [];
-                console.log('📋 Existing orders count:', orders.length);
+                // console.log('📋 Existing orders count:', orders.length);
 
                 // Format date and time for display
                 const formattedDate = formatDate(selectedDate);
@@ -4268,25 +4279,25 @@
                 };
 
                 orders.unshift(newOrder); // Add to beginning
-                console.log('➕ New order created:', newOrder);
-                console.log('📊 Total orders after adding:', orders.length);
+                // console.log('➕ New order created:', newOrder);
+                // console.log('📊 Total orders after adding:', orders.length);
 
                 // Save to localStorage
                 localStorage.setItem('phluowiseOrders', JSON.stringify(orders));
-                console.log('💾 Order saved to localStorage with key: phluowiseOrders');
-                console.log('💾 Order saved to schedule history:', orderData.orderId);
+                // console.log('💾 Order saved to localStorage with key: phluowiseOrders');
+                // console.log('💾 Order saved to schedule history:', orderData.orderId);
 
                 // Verify it was saved
                 const savedOrders = localStorage.getItem('phluowiseOrders');
                 const parsedOrders = JSON.parse(savedOrders);
-                console.log('✅ Verification - saved orders count:', parsedOrders.length);
+                // console.log('✅ Verification - saved orders count:', parsedOrders.length);
 
                 // Trigger storage event for schedule-history.html
                 window.dispatchEvent(new Event('storage'));
-                console.log('🔄 Storage event dispatched to schedule-history.html');
+                // console.log('🔄 Storage event dispatched to schedule-history.html');
 
             } catch (error) {
-                console.error('❌ Error saving order to history:', error);
+                // console.error('❌ Error saving order to history:', error);
                 showError('Error saving order. Please try again.');
             }
         }
@@ -4401,6 +4412,327 @@
                 localStorage.setItem('previousPage', 'services.html');
             }
         });
+
+        // Download Order PDF Function
+        function downloadOrderPDF() {
+            try {
+                // Get order data from the displayed elements
+                const orderId = document.getElementById('orderIdDisplay')?.textContent || 'N/A';
+                const orderDate = document.getElementById('orderDateDisplay')?.textContent || 'N/A';
+                const orderTime = document.getElementById('orderTimeDisplay')?.textContent || 'N/A';
+                const orderItems = document.getElementById('orderItemsDisplay')?.textContent || 'N/A';
+                
+                // Get additional order details from orderData object
+                const recipientName = orderData.recipient?.name || 'N/A';
+                const recipientPhone = orderData.recipient?.phone || 'N/A';
+                const recipientAddress = orderData.recipient?.address || 'N/A';
+                const deliveryInstructions = orderData.recipient?.instructions || 'None';
+                
+                // Calculate totals from selected products - ensuring accurate calculations
+                let subtotal = 0;
+                let totalItems = 0;
+                let productsList = [];
+                
+                if (selectedProducts && selectedProducts.length > 0) {
+                    selectedProducts.forEach(product => {
+                        // Ensure we have valid numeric values
+                        const productPrice = parseFloat(product.price) || 0;
+                        const productQuantity = parseInt(product.quantity) || 0;
+                        const productTotal = parseFloat(product.total) || (productPrice * productQuantity);
+                        
+                        // Use the calculated total or recalculate if needed
+                        const finalTotal = product.total ? parseFloat(product.total) : (productPrice * productQuantity);
+                        
+                        subtotal += finalTotal;
+                        totalItems += productQuantity;
+                        productsList.push({
+                            name: product.name || 'Unknown Product',
+                            quantity: productQuantity,
+                            price: productPrice,
+                            total: finalTotal
+                        });
+                    });
+                }
+                
+                // Calculate service fee using the same logic as the order flow
+                const serviceFee = totalItems * SERVICE_FEE_PER_ITEM;
+                const totalAmount = subtotal + serviceFee;
+
+                // Create PDF content with improved design
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+                
+                // Page dimensions and layout
+                const pageWidth = doc.internal.pageSize.getWidth();
+                const pageHeight = doc.internal.pageSize.getHeight();
+                const margin = 15;
+                const contentWidth = pageWidth - (margin * 2);
+                let yPosition = 15;
+                
+                // Helper function to check if we need a new page
+                function checkPageBreak(requiredHeight) {
+                    if (yPosition + requiredHeight > pageHeight - 20) {
+                        doc.addPage();
+                        yPosition = 15;
+                        return true;
+                    }
+                    return false;
+                }
+                
+                // Header with design
+                doc.setFillColor(59, 116, 255);
+                doc.rect(0, 0, pageWidth, 50, 'F');
+                
+                // Logo/Title area
+                doc.setTextColor(255, 255, 255);
+                doc.setFontSize(20);
+                doc.setFont('helvetica', 'bold');
+                doc.text('Phluowise', margin, 25);
+                doc.setFontSize(12);
+                doc.setFont('helvetica', 'normal');
+                doc.text('Order Confirmation', margin, 35);
+                
+                // Order ID in header
+                doc.setFontSize(10);
+                doc.text(`#${orderId}`, pageWidth - margin, 25, { align: 'right' });
+                
+                // Reset text color and position for content
+                doc.setTextColor(0, 0, 0);
+                yPosition = 60;
+                
+                // Current date and time
+                doc.setFontSize(9);
+                doc.setTextColor(100, 100, 100);
+                doc.text(`Generated: ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}`, margin, yPosition);
+                yPosition += 15;
+                
+                // Delivery Information Card
+                checkPageBreak(40);
+                
+                // Section header
+                doc.setTextColor(59, 116, 255);
+                doc.setFontSize(14);
+                doc.setFont('helvetica', 'bold');
+                doc.text('Delivery Information', margin, yPosition);
+                yPosition += 8;
+                
+                // Underline
+                doc.setDrawColor(59, 116, 255);
+                doc.setLineWidth(0.5);
+                doc.line(margin, yPosition, margin + 60, yPosition);
+                yPosition += 12;
+                
+                // Delivery details in two-column layout
+                doc.setTextColor(0, 0, 0);
+                doc.setFontSize(10);
+                doc.setFont('helvetica', 'normal');
+                
+                // Left column
+                doc.text('Date:', margin, yPosition);
+                doc.setFont('helvetica', 'bold');
+                doc.text(orderDate, margin + 25, yPosition);
+                
+                // Right column
+                doc.setFont('helvetica', 'normal');
+                doc.text('Time:', margin + 80, yPosition);
+                doc.setFont('helvetica', 'bold');
+                doc.text(orderTime, margin + 100, yPosition);
+                yPosition += 10;
+                
+                // Second row
+                doc.setFont('helvetica', 'normal');
+                doc.text('Items:', margin, yPosition);
+                doc.setFont('helvetica', 'bold');
+                doc.text(orderItems, margin + 25, yPosition);
+                
+                doc.setFont('helvetica', 'normal');
+                doc.text('Status:', margin + 80, yPosition);
+                doc.setFont('helvetica', 'bold');
+                doc.setTextColor(16, 185, 129);
+                doc.text('Confirmed', margin + 100, yPosition);
+                doc.setTextColor(0, 0, 0);
+                yPosition += 20;
+                
+                // Customer Information Card
+                checkPageBreak(60);
+                
+                // Section header
+                doc.setTextColor(59, 116, 255);
+                doc.setFontSize(14);
+                doc.setFont('helvetica', 'bold');
+                doc.text('Customer Information', margin, yPosition);
+                yPosition += 8;
+                
+                // Underline
+                doc.setDrawColor(59, 116, 255);
+                doc.line(margin, yPosition, margin + 80, yPosition);
+                yPosition += 12;
+                
+                // Customer details
+                doc.setTextColor(0, 0, 0);
+                doc.setFontSize(10);
+                doc.setFont('helvetica', 'normal');
+                
+                doc.text('Name:', margin, yPosition);
+                doc.setFont('helvetica', 'bold');
+                doc.text(recipientName.substring(0, 40), margin + 25, yPosition);
+                yPosition += 10;
+                
+                doc.setFont('helvetica', 'normal');
+                doc.text('Phone:', margin, yPosition);
+                doc.setFont('helvetica', 'bold');
+                doc.text(recipientPhone, margin + 25, yPosition);
+                yPosition += 10;
+                
+                doc.setFont('helvetica', 'normal');
+                doc.text('Address:', margin, yPosition);
+                
+                // Handle long address with text wrapping
+                const addressLines = doc.splitTextToSize(recipientAddress, contentWidth - 25);
+                doc.setFont('helvetica', 'bold');
+                addressLines.forEach((line, index) => {
+                    if (index === 0) {
+                        doc.text(line, margin + 25, yPosition);
+                    } else {
+                        doc.text(line, margin, yPosition + (index * 7));
+                    }
+                });
+                yPosition += (addressLines.length * 7) + 5;
+                
+                if (deliveryInstructions && deliveryInstructions !== 'None') {
+                    doc.setFont('helvetica', 'normal');
+                    doc.text('Instructions:', margin, yPosition);
+                    
+                    const instructionLines = doc.splitTextToSize(deliveryInstructions, contentWidth - 25);
+                    doc.setFont('helvetica', 'bold');
+                    instructionLines.forEach((line, index) => {
+                        if (index === 0) {
+                            doc.text(line, margin + 25, yPosition);
+                        } else {
+                            doc.text(line, margin, yPosition + (index * 7));
+                        }
+                    });
+                    yPosition += (instructionLines.length * 7) + 5;
+                }
+                
+                // Order Items Section
+                checkPageBreak(80);
+                
+                // Section header
+                doc.setTextColor(59, 116, 255);
+                doc.setFontSize(14);
+                doc.setFont('helvetica', 'bold');
+                doc.text('Order Details', margin, yPosition);
+                yPosition += 8;
+                
+                // Underline
+                doc.setDrawColor(59, 116, 255);
+                doc.line(margin, yPosition, margin + 60, yPosition);
+                yPosition += 12;
+                
+                // Table headers with background
+                doc.setFillColor(240, 240, 240);
+                doc.rect(margin, yPosition - 7, contentWidth, 12, 'F');
+                
+                doc.setTextColor(0, 0, 0);
+                doc.setFontSize(9);
+                doc.setFont('helvetica', 'bold');
+                doc.text('Product', margin + 3, yPosition);
+                doc.text('Qty', margin + 80, yPosition);
+                doc.text('Price', margin + 100, yPosition);
+                doc.text('Total', margin + 140, yPosition);
+                yPosition += 15;
+                
+                // Table rows
+                doc.setFont('helvetica', 'normal');
+                productsList.forEach((product, index) => {
+                    checkPageBreak(12);
+                    
+                    // Alternate row background
+                    if (index % 2 === 0) {
+                        doc.setFillColor(248, 248, 248);
+                        doc.rect(margin, yPosition - 7, contentWidth, 10, 'F');
+                    }
+                    
+                    const productName = product.name.substring(0, 25);
+                    const quantity = product.quantity.toString();
+                    const unitPrice = `GHS ${product.price.toFixed(2)}`;
+                    const totalPrice = `GHS ${product.total.toFixed(2)}`;
+                    
+                    doc.text(productName, margin + 3, yPosition);
+                    doc.text(quantity, margin + 80, yPosition);
+                    doc.text(unitPrice, margin + 100, yPosition);
+                    doc.text(totalPrice, margin + 140, yPosition);
+                    yPosition += 10;
+                });
+                
+                yPosition += 10;
+                
+                // Price Summary Card
+                checkPageBreak(50);
+                
+                // Summary box with border and background
+                doc.setFillColor(240, 248, 255);
+                doc.rect(margin, yPosition - 5, contentWidth, 45, 'F');
+                doc.setDrawColor(59, 116, 255);
+                doc.rect(margin, yPosition - 5, contentWidth, 45);
+                
+                doc.setTextColor(59, 116, 255);
+                doc.setFontSize(12);
+                doc.setFont('helvetica', 'bold');
+                doc.text('Price Summary', margin + 3, yPosition + 5);
+                yPosition += 15;
+                
+                doc.setTextColor(0, 0, 0);
+                doc.setFontSize(10);
+                doc.setFont('helvetica', 'normal');
+                doc.text('Subtotal:', margin + 3, yPosition);
+                doc.setFont('helvetica', 'bold');
+                doc.text(`GHS ${subtotal.toFixed(2)}`, margin + 120, yPosition);
+                yPosition += 8;
+                
+                doc.setFont('helvetica', 'normal');
+                doc.text(`Service Fee (${totalItems} items):`, margin + 3, yPosition);
+                doc.setFont('helvetica', 'bold');
+                doc.text(`GHS ${serviceFee.toFixed(2)}`, margin + 120, yPosition);
+                yPosition += 10;
+                
+                // Separator line
+                doc.setDrawColor(59, 116, 255);
+                doc.line(margin + 3, yPosition, margin + contentWidth - 3, yPosition);
+                yPosition += 8;
+                
+                doc.setFontSize(11);
+                doc.setFont('helvetica', 'bold');
+                doc.text('Total Amount:', margin + 3, yPosition);
+                doc.setTextColor(59, 116, 255);
+                doc.text(`GHS ${totalAmount.toFixed(2)}`, margin + 120, yPosition);
+                
+                // Footer
+                yPosition = pageHeight - 25;
+                doc.setTextColor(100, 100, 100);
+                doc.setFontSize(8);
+                doc.setFont('helvetica', 'normal');
+                doc.text('Thank you for choosing Phluowise!', margin, yPosition);
+                doc.text('This is an automatically generated order confirmation.', margin, yPosition + 6);
+                doc.text('For inquiries, contact our customer support.', margin, yPosition + 12);
+                
+                // Add page number
+                const totalPages = doc.internal.getNumberOfPages();
+                for (let i = 1; i <= totalPages; i++) {
+                    doc.setPage(i);
+                    doc.text(`Page ${i} of ${totalPages}`, pageWidth - margin, yPosition + 12, { align: 'right' });
+                }
+                
+                // Save the PDF
+                doc.save(`order_${orderId}_${Date.now()}.pdf`);
+                
+            } catch (error) {
+                console.error('Error generating PDF:', error);
+                alert('Failed to generate PDF. Please try again.');
+            }
+        }
+
     </script>
 
 </body>

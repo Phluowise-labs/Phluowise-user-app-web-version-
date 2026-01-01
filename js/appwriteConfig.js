@@ -1,11 +1,11 @@
-const { Client, Account, Databases, ID, Query } = Appwrite;
+const { ID, Query } = Appwrite;
 
-const client = new Client()
+const client = new Appwrite.Client()
     .setEndpoint('https://nyc.cloud.appwrite.io/v1')
     .setProject('68b17582003582da69c8');
 
-const account = new Account(client);
-const databases = new Databases(client);
+const account = new Appwrite.Account(client);
+const databases = new Appwrite.Databases(client);
 
 // Database Config
 const DATABASE_ID = '68b1b7590035346a3be9';

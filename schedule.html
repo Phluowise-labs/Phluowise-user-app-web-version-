@@ -1315,7 +1315,7 @@
             
             // Handle case when select element doesn't exist
             if (!select) {
-                console.warn('Working days select element not found');
+                // console.warn('Working days select element not found');
                 return;
             }
             
@@ -1394,38 +1394,38 @@
 
         // Schedule Flow Bottom Sheet - FIXED FUNCTION WITH CONSOLE LOGS
         function startScheduleFlow() {
-            console.log('🔵 [DEBUG] Schedule Pickup button clicked - Function startScheduleFlow() called');
+            // console.log('🔵 [DEBUG] Schedule Pickup button clicked - Function startScheduleFlow() called');
             
             const sheet = document.getElementById('scheduleFlowSheet');
             const content = document.getElementById('scheduleFlowContent');
             
-            console.log('🔵 [DEBUG] Sheet element:', sheet ? 'Found' : 'NOT FOUND');
-            console.log('🔵 [DEBUG] Content element:', content ? 'Found' : 'NOT FOUND');
+            // console.log('🔵 [DEBUG] Sheet element:', sheet ? 'Found' : 'NOT FOUND');
+            // console.log('🔵 [DEBUG] Content element:', content ? 'Found' : 'NOT FOUND');
             
             if (!sheet || !content) {
-                console.error('❌ [ERROR] Modal elements not found!');
-                console.error('❌ [ERROR] Sheet:', sheet);
-                console.error('❌ [ERROR] Content:', content);
+                // console.error('❌ [ERROR] Modal elements not found!');
+                // console.error('❌ [ERROR] Sheet:', sheet);
+                // console.error('❌ [ERROR] Content:', content);
                 alert('Error: Modal elements not found. Please check console for details.');
                 return;
             }
             
-            console.log('🔵 [DEBUG] Removing opacity-0 and pointer-events-none from sheet');
+            // console.log('🔵 [DEBUG] Removing opacity-0 and pointer-events-none from sheet');
             sheet.classList.remove('opacity-0', 'pointer-events-none');
             sheet.classList.add('opacity-100');
             
-            console.log('🔵 [DEBUG] Setting timeout to remove translate-y-full from content');
+            // console.log('🔵 [DEBUG] Setting timeout to remove translate-y-full from content');
             setTimeout(() => {
-                console.log('🔵 [DEBUG] Removing translate-y-full from content');
+                // console.log('🔵 [DEBUG] Removing translate-y-full from content');
                 content.classList.remove('translate-y-full');
-                console.log('✅ [SUCCESS] Schedule flow sheet opened successfully');
+                // console.log('✅ [SUCCESS] Schedule flow sheet opened successfully');
             }, 10);
             
             goToStep('terms');
         }
 
         function closeScheduleFlow() {
-            console.log('🔵 [DEBUG] Closing schedule flow');
+            // console.log('🔵 [DEBUG] Closing schedule flow');
             const sheet = document.getElementById('scheduleFlowSheet');
             const content = document.getElementById('scheduleFlowContent');
             
@@ -1433,12 +1433,12 @@
             setTimeout(() => {
                 sheet.classList.remove('opacity-100');
                 sheet.classList.add('opacity-0', 'pointer-events-none');
-                console.log('✅ [SUCCESS] Schedule flow closed successfully');
+                // console.log('✅ [SUCCESS] Schedule flow closed successfully');
             }, 300);
         }
 
         function goToStep(step) {
-            console.log(`🔵 [DEBUG] Navigating to step: ${step}`);
+            // console.log(`🔵 [DEBUG] Navigating to step: ${step}`);
             // Fixed: Include 'terms' in the steps array
             const allSteps = ['terms', 'product', 'recipient', 'review', 'payment-terms', 'select-payment', 'payment-details', 'payment-processing', 'payment-success', 'pickup-sent', 'rate-phluowise', 'rating-done'];
             allSteps.forEach(s => {
@@ -1451,9 +1451,9 @@
             const stepElement = document.getElementById('step-' + step);
             if (stepElement) {
                 stepElement.classList.remove('hidden');
-                console.log(`✅ [SUCCESS] Step ${step} displayed`);
+                // console.log(`✅ [SUCCESS] Step ${step} displayed`);
             } else {
-                console.error(`❌ [ERROR] Step element not found: step-${step}`);
+                // console.error(`❌ [ERROR] Step element not found: step-${step}`);
                 return;
             }
             
@@ -1746,25 +1746,25 @@
         // Missing schedule flow functions
         function initializeProducts() {
             // Initialize product selection for schedule flow
-            console.log('🔵 [DEBUG] Products initialized for schedule flow');
+            // console.log('🔵 [DEBUG] Products initialized for schedule flow');
         }
 
         function updateOrderReview() {
             // Update order review display
-            console.log('🔵 [DEBUG] Order review updated');
+            // console.log('🔵 [DEBUG] Order review updated');
         }
 
         function simulatePaymentProcessing() {
-            console.log('🔵 [DEBUG] Simulating payment processing');
+            // console.log('🔵 [DEBUG] Simulating payment processing');
             // Simulate payment processing
             setTimeout(() => {
                 goToStep('payment-success');
-                console.log('✅ [SUCCESS] Payment processing simulated successfully');
+                // console.log('✅ [SUCCESS] Payment processing simulated successfully');
             }, 3000);
         }
 
         function selectPaymentMethod(method) {
-            console.log(`🔵 [DEBUG] Payment method selected: ${method}`);
+            // console.log(`🔵 [DEBUG] Payment method selected: ${method}`);
             // Handle payment method selection
             document.querySelectorAll('.payment-option').forEach(btn => {
                 const radio = btn.querySelector('.payment-radio');
@@ -1777,13 +1777,13 @@
         }
 
         function goToPaymentDetails() {
-            console.log('🔵 [DEBUG] Going to payment details step');
+            // console.log('🔵 [DEBUG] Going to payment details step');
             // Go to payment details step
             goToStep('payment-details');
         }
 
         function setRating(rating) {
-            console.log(`🔵 [DEBUG] Setting Phluowise rating to: ${rating}`);
+            // console.log(`🔵 [DEBUG] Setting Phluowise rating to: ${rating}`);
             // Set rating for Phluowise rating step
             const stars = document.querySelectorAll('.star-button');
             stars.forEach((star, index) => {
@@ -1860,7 +1860,7 @@
                             `);
                         },
                         (error) => {
-                            console.log('Location access denied');
+                            // console.log('Location access denied');
                         }
                     );
                 }
@@ -1913,7 +1913,7 @@
 
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
-            console.log('🔵 [DEBUG] DOM Content Loaded - Initializing schedule page');
+            // console.log('🔵 [DEBUG] DOM Content Loaded - Initializing schedule page');
             const savedTheme = localStorage.getItem('theme') || 'dark';
             document.body.classList.remove('dark-theme', 'gray-theme', 'light-theme');
             document.body.classList.add(savedTheme + '-theme');
@@ -1931,7 +1931,7 @@
             // Initialize map when schedule view is active
             setTimeout(() => {
                 initMap();
-                console.log('✅ [SUCCESS] Map initialized');
+                // console.log('✅ [SUCCESS] Map initialized');
             }, 100);
         });
     </script>
