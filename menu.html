@@ -101,8 +101,8 @@
                 </div>
 
                 <!-- User Name -->
-                <h2 class="text-white text-xl font-semibold">John Doe</h2>
-                <p class="text-[#808080] text-base">john@example.com</p>
+                <h2 id="menuUserName" class="text-white text-xl font-semibold">Loading...</h2>
+                <p id="menuUserEmail" class="text-[#808080] text-base">Loading...</p>
             </div>
 
             <!-- Menu Content -->
@@ -366,10 +366,89 @@
         </div>
     </div>
 
+    <!-- Include Appwrite and Auth Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/appwrite@15.0.0/dist/appwrite.js"></script>
+    <script>
+        // Fallback if CDN fails
+        if (typeof Appwrite === 'undefined') {
+            console.log('Primary CDN failed, trying fallback...');
+            document.write('<script src="https://unpkg.com/appwrite@15.0.0/dist/appwrite.js"><\/script>');
+        }
+    </script>
+    <script src="js/appwriteConfig.js"></script>
+    <script src="js/mobileFeedback.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/customerAuth.js"></script>
+    
     <!-- Include Theme JS -->
-    <script src="../public/js/theme.js"></script>
+    <script src="js/theme.js"></script>
 
     <script>
+        // Debug: Check if Appwrite loaded correctly
+        console.log('Appwrite version:', typeof Appwrite !== 'undefined' ? 'loaded' : 'not loaded');
+        console.log('Account available:', typeof window.account !== 'undefined' ? 'available' : 'not available');
+        console.log('signOut available:', typeof signOut !== 'undefined' ? 'available' : 'not available');
+        
+        // Load user profile data on page load
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log('Menu page loaded, loading user data...');
+            
+            // Load user data first
+            await loadMenuUserData();
+            
+            // Then load theme
+            const theme = localStorage.getItem('theme') || 'dark';
+            document.getElementById('currentThemeDisplay').textContent = theme.charAt(0).toUpperCase() + theme.slice(1);
+            updateThemeHighlight(theme);
+        });
+
+        async function loadMenuUserData() {
+            console.log('loadMenuUserData called');
+            try {
+                const userData = await getUserProfile();
+                console.log('getUserProfile result:', userData);
+                
+                if (userData && userData.auth) {
+                    const currentUser = userData.auth;
+                    const userProfile = userData.profile;
+                    
+                    console.log('Current user:', currentUser);
+                    console.log('User profile:', userProfile);
+                    
+                    // Update user name and email from database
+                    const userNameElement = document.getElementById('menuUserName');
+                    const userEmailElement = document.getElementById('menuUserEmail');
+                    
+                    console.log('Name element found:', !!userNameElement);
+                    console.log('Email element found:', !!userEmailElement);
+                    
+                    if (userNameElement) {
+                        const nameToSet = userProfile?.full_name || currentUser.name || 'User';
+                        userNameElement.textContent = nameToSet;
+                        console.log('Set name to:', nameToSet);
+                    }
+                    
+                    if (userEmailElement) {
+                        const emailToSet = userProfile?.email || currentUser.email || 'user@example.com';
+                        userEmailElement.textContent = emailToSet;
+                        console.log('Set email to:', emailToSet);
+                    }
+                } else {
+                    console.log('No user data found, redirecting to signin');
+                    // Not logged in, redirect to signin
+                    window.location.href = 'signin.html';
+                }
+            } catch (error) {
+                console.error('Error loading menu user data:', error);
+                // Fallback to default values or redirect
+                const userNameElement = document.getElementById('menuUserName');
+                const userEmailElement = document.getElementById('menuUserEmail');
+                
+                if (userNameElement) userNameElement.textContent = 'User';
+                if (userEmailElement) userEmailElement.textContent = 'user@example.com';
+            }
+        }
+
         // Update theme display on load
         document.addEventListener('DOMContentLoaded', function () {
             const theme = localStorage.getItem('theme') || 'dark';
@@ -489,10 +568,13 @@
 
         // Download account data
         function downloadAccountData() {
-            // Create sample account data
+            // Get current user data from the same source as menu display
+            const userNameElement = document.getElementById('menuUserName');
+            const userEmailElement = document.getElementById('menuUserEmail');
+            
             const accountData = {
-                userName: localStorage.getItem('userName') || 'John Doe',
-                userEmail: localStorage.getItem('userEmail') || 'john@example.com',
+                userName: userNameElement?.textContent || 'User',
+                userEmail: userEmailElement?.textContent || 'user@example.com',
                 downloadDate: new Date().toISOString(),
                 data: {
                     profile: 'User profile information',
@@ -550,8 +632,11 @@
             
             // Add user info
             doc.setFontSize(12);
-            doc.text(`Name: ${localStorage.getItem('userName') || 'John Doe'}`, 20, 35);
-            doc.text(`Email: ${localStorage.getItem('userEmail') || 'john@example.com'}`, 20, 45);
+            const userNameElement = document.getElementById('menuUserName');
+            const userEmailElement = document.getElementById('menuUserEmail');
+            
+            doc.text(`Name: ${userNameElement?.textContent || 'User'}`, 20, 35);
+            doc.text(`Email: ${userEmailElement?.textContent || 'user@example.com'}`, 20, 45);
             doc.text(`Download Date: ${new Date().toLocaleDateString()}`, 20, 55);
             
             // Add table headers
@@ -610,11 +695,20 @@
             }
         });
 
-        // Logout
+        // Logout - Use the same logout as profile page
         function logout() {
-            localStorage.removeItem('userName');
-            localStorage.removeItem('userEmail');
-            window.location.href = 'signin.html';
+            console.log('Menu logout clicked');
+            console.log('signOut function available:', typeof signOut);
+            console.log('account object available:', typeof account);
+            console.log('feedback object available:', typeof feedback);
+            
+            if (typeof signOut === 'function') {
+                console.log('Calling signOut()...');
+                signOut();
+            } else {
+                console.log('signOut not available, redirecting to signin.html');
+                window.location.href = 'signin.html';
+            }
         }
     </script>
 

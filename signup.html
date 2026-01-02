@@ -200,8 +200,9 @@
 
     <!-- Appwrite Config & Auth Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/appwrite@14.0.1"></script>
-    <script src="../public/js/appwriteConfig.js"></script>
-    <script src="../public/js/auth.js"></script>
+    <script src="js/appwriteConfig.js"></script>
+    <script src="js/mobileFeedback.js"></script>
+    <script src="js/auth.js"></script>
 
     <script>
         function togglePassword() {
@@ -209,20 +210,51 @@
             passwordInput.type = passwordInput.type === 'password' ? 'text' : 'password';
         }
 
+        let selectedUserType = 'individual';
+
+        document.getElementById('individualBtn').addEventListener('click', function() {
+            selectedUserType = 'individual';
+            this.classList.add('bg-[#007ACC]/20', 'border-[#3B74FF]');
+            this.classList.remove('bg-[#40444B]/20', 'border-[#40444B]');
+            document.getElementById('businessBtn').classList.add('bg-[#40444B]/20', 'border-[#40444B]');
+            document.getElementById('businessBtn').classList.remove('bg-[#007ACC]/20', 'border-[#3B74FF]');
+        });
+
+        document.getElementById('businessBtn').addEventListener('click', function() {
+            selectedUserType = 'business';
+            this.classList.add('bg-[#007ACC]/20', 'border-[#3B74FF]');
+            this.classList.remove('bg-[#40444B]/20', 'border-[#40444B]');
+            document.getElementById('individualBtn').classList.add('bg-[#40444B]/20', 'border-[#40444B]');
+            document.getElementById('individualBtn').classList.remove('bg-[#007ACC]/20', 'border-[#3B74FF]');
+        });
+
         function handleSignUp() {
             const fullName = document.getElementById('fullName').value;
             const email = document.getElementById('email').value;
             const phone = document.getElementById('phone').value;
             const password = document.getElementById('password').value;
-            const userType = document.getElementById('individualBtn').classList.contains('bg-[#007ACC]') ? 'individual' : 'business';
+            const userType = selectedUserType;
+
+            if (!fullName || !email || !phone || !password) {
+                feedback.error('Please fill in all fields');
+                return;
+            }
 
             if (typeof signUp === 'function') {
                 signUp(fullName, email, phone, password, userType);
             } else {
-                alert('Creating account with: ' + email);
+                feedback.error('Creating account with: ' + email);
                 window.location.href = 'home.html';
             }
         }
+
+        // Check session on page load
+        document.addEventListener('DOMContentLoaded', async function() {
+            const user = await checkSession();
+            if (user) {
+                window.location.href = 'home.html';
+            }
+        });
 
         // Modal functions
         function showTermsModal() {

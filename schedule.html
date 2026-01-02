@@ -1350,7 +1350,7 @@
                         <div class="absolute inset-0 pointer-events-none z-10"
                             style="background: linear-gradient(to bottom, transparent, var(--bg-color));"
                             id="descGradient"></div>
-                        <p class="text-white text-base font-normal leading-6 tracking-tighter text-justify">
+                        <p id="descriptionText" class="text-white text-base font-normal leading-6 tracking-tighter text-justify">
                             Voltic Water Company is a leading provider of premium bottled water in Ghana, 
                             offering a wide range of water products including sachets, bottles, and dispensers. 
                             Committed to delivering clean, safe, and refreshing water to homes and businesses 
@@ -2443,8 +2443,10 @@
         </a>
     </div>
 
-    <script src="../public/js/appwriteConfig.js"></script>
-    <script src="../public/js/theme.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/appwrite@13.0.1"></script>
+    <script src="js/appwriteConfig.js"></script>
+    <script src="js/companyData.js"></script>
+    <script src="js/theme.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
         // Global variables for the schedule flow
@@ -2468,57 +2470,88 @@
         let selectedTime = '';
         let selectedProducts = [];
 
-        // Sample products data for the company
-        const companyProducts = [
-            {
-                id: 1,
-                name: 'Sachets Water (500ml bag)',
-                price: 20.00,
-                image: '../public/images/main/ProductImage1.png',
-                quantity: 1,
-                description: 'Pack of 20 sachets, 500ml each'
-            },
-            {
-                id: 2,
-                name: 'Bottle Water (750ml pack)',
-                price: 15.00,
-                image: '../public/images/main/ProductImage1.png',
-                quantity: 1,
-                description: 'Pack of 12 bottles, 750ml each'
-            },
-            {
-                id: 3,
-                name: 'Dispenser (5 gallons)',
-                price: 25.00,
-                image: '../public/images/main/ProductImage1.png',
-                quantity: 1,
-                description: '5-gallon water dispenser'
-            },
-            {
-                id: 4,
-                name: 'Sachets Water (1L bag)',
-                price: 30.00,
-                image: '../public/images/main/ProductImage1.png',
-                quantity: 1,
-                description: 'Pack of 15 sachets, 1L each'
-            },
-            {
-                id: 5,
-                name: 'Premium Bottle (1.5L)',
-                price: 18.00,
-                image: '../public/images/main/ProductImage1.png',
-                quantity: 1,
-                description: 'Pack of 8 bottles, 1.5L each'
-            },
-            {
-                id: 6,
-                name: 'Dispenser (10 gallons)',
-                price: 40.00,
-                image: '../public/images/main/ProductImage1.png',
-                quantity: 1,
-                description: '10-gallon water dispenser'
+        // Products data for the company (fetched from Appwrite)
+        let companyProducts = [];
+
+        async function fetchProductsForCurrentBranch() {
+            try {
+                // Ensure Appwrite is available
+                if (!window.databases || !window.appwriteConfig) {
+                    console.error('❌ Appwrite not available for products - SDK not loaded');
+                    return;
+                }
+
+                // Get branch_id from URL
+                const urlParams = new URLSearchParams(window.location.search);
+                const branchId = urlParams.get('branch_id');
+
+                // If branch data already loaded, prefer using its IDs
+                let filterQueries = [];
+                const branchData = window.currentCompany && window.currentCompany.branch_id ? window.currentCompany : null;
+                const resolvedBranchId = branchData?.branch_id || branchId;
+                const resolvedCompanyId = branchData?.company_id;
+
+                if (resolvedBranchId) {
+                    filterQueries.push(window.Query.equal('branch_id', resolvedBranchId));
+                }
+                if (resolvedCompanyId) {
+                    filterQueries.push(window.Query.equal('company_id', resolvedCompanyId));
+                }
+
+                // Fallback: no branch/company filter, just fetch all and filter client-side
+                const response = await window.databases.listDocuments(
+                    window.appwriteConfig.DATABASE_ID,
+                    window.appwriteConfig.PRODUCTS_TABLE,
+                    filterQueries.length > 0 ? filterQueries : [window.Query.orderDesc('$createdAt')]
+                );
+
+                const productsFromDb = response.documents || [];
+
+                // Map DB fields to UI model, including image resolution
+                companyProducts = productsFromDb.map((doc, index) => {
+                    const type = (doc.product_type || '').toLowerCase();
+
+                    // Determine image: prefer product_image, else type-based fallback, else branch/company profile
+                    let imageUrl = doc.product_image || '';
+                    if (!imageUrl) {
+                        if (type.includes('dispenser')) imageUrl = 'images/products/dispenser.jpg';
+                        else if (type.includes('bottle')) imageUrl = 'images/products/bottle.jpg';
+                        else if (type.includes('sachet') || type.includes('sachets')) imageUrl = 'images/products/sachets.jpg';
+                        else imageUrl = 'images/main/ProductImage1.png';
+                    }
+
+                    // Quantity default to 1, ensure numeric price
+                    const priceNum = parseFloat(doc.price) || 0;
+
+                    return {
+                        id: doc.product_id || doc.$id || index + 1,
+                        name: doc.product_name || 'Product',
+                        price: priceNum,
+                        image: imageUrl,
+                        quantity: 1,
+                        description: doc.size ? `${doc.size}` : (doc.product_type || 'Product')
+                    };
+                });
+
+                // Refresh selection grid UI if on product selection step
+                if (typeof updateProductSelectionStep === 'function') {
+                    updateProductSelectionStep();
+                }
+
+                // Also refresh Products subview grid
+                if (typeof renderProducts === 'function') {
+                    renderProducts();
+                }
+            } catch (error) {
+                console.error('❌ Error fetching products:', error);
             }
-        ];
+        }
+
+        // Trigger fetching after branch data is loaded and DOM is ready
+        document.addEventListener('DOMContentLoaded', () => {
+            // After branch info updates, fetch related products
+            fetchProductsForCurrentBranch();
+        });
 
         // Variables from original schedule.html
         let readMore = false;
@@ -2629,17 +2662,22 @@
             const container = document.getElementById('productsGrid');
             container.innerHTML = '';
 
-            products.forEach((p, i) => {
+            const list = (Array.isArray(companyProducts) && companyProducts.length > 0) ? companyProducts : products;
+
+            list.forEach((p, i) => {
                 const card = document.createElement('div');
                 card.className = "relative overflow-hidden rounded-[10px]";
                 card.style.width = "calc(50% - 8px)";
                 card.style.height = "220px";
                 card.style.backgroundColor = "var(--card-bg-dark)";
 
+                const priceText = Number(p.price || 0).toFixed(2);
+                const descText = p.description || p.type || '';
+
                 card.innerHTML = `
                     <!-- Top Blur (intensity: 70, height: 40, zIndex: 2) -->
                     <div class="absolute top-0 left-0 right-0 px-2 flex flex-row justify-between items-center z-10 glass-blur-70" style="height: 40px;">
-                         <span class="text-white font-[700] text-lg">GHS ${p.price}</span>
+                         <span class="text-white font-[700] text-lg">GHS ${priceText}</span>
                          <div class="w-[15px] h-[15px] bg-white/50 rounded-sm"></div>
                     </div>
                     
@@ -2649,11 +2687,11 @@
                     <div class="absolute bottom-0 left-0 right-0 px-2 py-1 flex flex-row justify-between items-center gap-1 z-10 glass-blur-50" style="height: 50px;">
                          <div>
                               <span class="text-white font-[600] block leading-tight truncate" style="width: 110px;">${p.name}</span>
-                              <span class="text-white font-[400] text-sm block leading-tight truncate" style="width: 110px;">${p.type}</span>
+                              <span class="text-white font-[400] text-sm block leading-tight truncate" style="width: 110px;">${descText}</span>
                          </div>
                          <!-- Button (height: 25, rounded: 5, bg: #40444B, shadow) -->
                          <button class="bg-[#40444B] rounded-[5px] px-2 flex items-center justify-center transform active:scale-95 transition-transform"
-                                 onclick="openProductModal('${p.name}', ${p.price}, '${p.type}')"
+                                 onclick="openProductModal('${p.name}', ${Number(p.price || 0)}, '${descText}')"
                                  style="height: 25px; box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.25);">
                               <span class="text-white text-sm font-[500]">less +</span>
                          </button>
@@ -2677,28 +2715,25 @@
             }
             
             const selectedDay = select.value;
-            const dayHours = currentCompany.workingHours[selectedDay];
+            const dayHours = window.currentCompany?.workingHours?.[selectedDay];
             
-            if (!dayHours) {
+            // Check if day exists and has both opening and closing times
+            if (!dayHours || !dayHours.open || !dayHours.close || dayHours.open === '' || dayHours.close === '') {
                 openingTimeSpan.textContent = 'Closed';
                 closingTimeSpan.textContent = 'Closed';
-                openingTimeSpan.style.color = '#F57D7D';
-                closingTimeSpan.style.color = '#F57D7D';
+                openingTimeSpan.style.color = '#FF0000'; // Red color for Closed
+                closingTimeSpan.style.color = '#FF0000'; // Red color for Closed
+                console.log(`${selectedDay}: Closed (no opening/closing times set)`);
                 return;
             }
             
-            if (dayHours.isOpen) {
-                openingTimeSpan.textContent = dayHours.open;
-                closingTimeSpan.textContent = dayHours.close;
-                openingTimeSpan.style.color = '#FFFFFF';
-                closingTimeSpan.style.color = '#FFFFFF';
-            } else {
-                openingTimeSpan.textContent = 'Closed';
-                closingTimeSpan.textContent = 'Closed';
-                openingTimeSpan.style.color = '#F57D7D';
-                closingTimeSpan.style.color = '#F57D7D';
-            }
+            openingTimeSpan.textContent = dayHours.open;
+            closingTimeSpan.textContent = dayHours.close;
+            openingTimeSpan.style.color = '#FFFFFF'; // Reset to normal color
+            closingTimeSpan.style.color = '#FFFFFF'; // Reset to normal color
+            console.log(`${selectedDay}: ${dayHours.open} - ${dayHours.close}`);
             
+            // Highlight today
             const today = new Date().toLocaleDateString('en-US', { weekday: 'short' }).toLowerCase();
             const dayMapping = {
                 'mon': 'monday', 'tue': 'tuesday', 'wed': 'wednesday',
@@ -3690,7 +3725,7 @@
             });
         }
 
-        function submitRating() {
+        async function submitRating() {
             const comment = document.getElementById('ratingComment').value;
 
             if (userRating === 0) {
@@ -3701,6 +3736,143 @@
             orderData.rating = userRating;
             orderData.comment = comment;
 
+            // Prefer server-side API to ensure DB save without client auth
+            try {
+                const urlParams = new URLSearchParams(window.location.search);
+                const branchId = urlParams.get('branch_id');
+                const branchData = window.currentCompany && window.currentCompany.branch_id ? window.currentCompany : null;
+                const resolvedBranchId = branchData?.branch_id || branchId;
+                const resolvedCompanyId = branchData?.company_id || (window.currentCompany?.company_id || '');
+
+                const payload = {
+                    company_id: resolvedCompanyId,
+                    branch_id: resolvedBranchId || '',
+                    stars: userRating,
+                    comment: comment || '',
+                    product_tags: (typeof selectedTags !== 'undefined') ? Array.from(selectedTags) : [],
+                    location: orderData.recipient?.address || (window.currentCompany?.location || ''),
+                    order_id: orderData.orderId || null,
+                    customer_id: null
+                };
+
+                const resp = await fetch('/api/ratings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!resp.ok) throw new Error('Server API failed');
+
+                const data = await resp.json();
+                console.log('✅ Rating saved via server API', data);
+
+                // Also reflect immediately in local histogram & list
+                const storageKey = `reviews_${resolvedCompanyId || 'unknown'}_${resolvedBranchId || 'all'}`;
+                const existing = localStorage.getItem(storageKey);
+                const reviewsLocal = existing ? JSON.parse(existing) : [];
+                const newReview = {
+                    id: Date.now(),
+                    name: 'You',
+                    rating: userRating,
+                    comment: comment || '',
+                    tags: (typeof selectedTags !== 'undefined') ? Array.from(selectedTags) : [],
+                    date: new Date().toISOString()
+                };
+                reviewsLocal.push(newReview);
+                localStorage.setItem(storageKey, JSON.stringify(reviewsLocal));
+
+                updateRatingDisplay();
+                renderReviews();
+
+                currentStep = 12;
+                goToStep('ratingSuccess');
+                return;
+            } catch (apiErr) {
+                console.warn('API rating save failed, attempting Appwrite client save...', apiErr);
+            }
+
+            // Save rating to Appwrite DB (client-side) as secondary path
+            try {
+                if (window.databases && window.appwriteConfig && window.account) {
+                    const user = await window.account.get();
+                    const ratingId = (Math.random().toString(36).slice(2, 10) + Date.now().toString(36)).slice(0, 20);
+
+                    // Resolve company and branch IDs
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const branchId = urlParams.get('branch_id');
+                    const branchData = window.currentCompany && window.currentCompany.branch_id ? window.currentCompany : null;
+                    const resolvedBranchId = branchData?.branch_id || branchId;
+                    const resolvedCompanyId = branchData?.company_id || (window.currentCompany?.company_id || '');
+
+                    const payload = {
+                        rating_id: ratingId,
+                        company_id: resolvedCompanyId,
+                        branch_id: resolvedBranchId || '',
+                        order_id: orderData.orderId || null,
+                        customer_id: user.$id,
+                        stars: userRating,
+                        comment: comment || '',
+                        created_at: new Date().toISOString(),
+                        location: orderData.recipient?.address || (window.currentCompany?.location || ''),
+                        product_tags: (typeof selectedTags !== 'undefined') ? Array.from(selectedTags) : []
+                    };
+
+                    await window.databases.createDocument(
+                        window.appwriteConfig.DATABASE_ID,
+                        window.appwriteConfig.RATINGS_TABLE,
+                        window.ID.unique(),
+                        payload
+                    );
+                    console.log('✅ Rating saved to Appwrite', payload);
+
+                    // Refresh ratings and histogram after successful save
+                    const storageKey = `reviews_${resolvedCompanyId || 'unknown'}_${resolvedBranchId || 'all'}`;
+                    const existing = localStorage.getItem(storageKey);
+                    const reviewsLocal = existing ? JSON.parse(existing) : [];
+                    const newReview = {
+                        id: Date.now(),
+                        name: 'You',
+                        rating: userRating,
+                        comment: comment || '',
+                        tags: (typeof selectedTags !== 'undefined') ? Array.from(selectedTags) : [],
+                        date: new Date().toISOString()
+                    };
+                    reviewsLocal.push(newReview);
+                    localStorage.setItem(storageKey, JSON.stringify(reviewsLocal));
+
+                    updateRatingDisplay();
+                    renderReviews();
+
+                    // Proceed to success only after saving
+                    currentStep = 12;
+                    goToStep('ratingSuccess');
+                    return;
+                } else {
+                    console.error('❌ Appwrite not available for ratings');
+                }
+            } catch (err) {
+                console.error('❌ Failed to save rating via Appwrite client:', err);
+            }
+
+            // Fallback: save locally and update UI
+            const urlParams = new URLSearchParams(window.location.search);
+            const branchId = urlParams.get('branch_id');
+            const branchData = window.currentCompany && window.currentCompany.branch_id ? window.currentCompany : null;
+            const resolvedBranchId = branchData?.branch_id || branchId;
+            const resolvedCompanyId = branchData?.company_id || (window.currentCompany?.company_id || '');
+            const localReview = {
+                id: (Math.random().toString(36).slice(2, 10) + Date.now().toString(36)).slice(0, 20),
+                name: 'Anonymous',
+                rating: userRating,
+                comment: comment || '',
+                tags: (typeof selectedTags !== 'undefined') ? Array.from(selectedTags) : [],
+                date: new Date()
+            };
+            reviews.push(localReview);
+            const storageKey = `reviews_${resolvedCompanyId || 'unknown'}_${resolvedBranchId || 'all'}`;
+            localStorage.setItem(storageKey, JSON.stringify(reviews));
+            updateRatingDisplay();
+            renderReviews();
             currentStep = 12;
             goToStep('ratingSuccess');
         }
@@ -4632,19 +4804,57 @@
             alert('Thank you for your review!');
         }
 
-        function loadReviews() {
-            const savedReviews = localStorage.getItem(`reviews_${currentCompany.id}`);
+        async function loadReviews() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const branchId = urlParams.get('branch_id');
+            const branchData = window.currentCompany && window.currentCompany.branch_id ? window.currentCompany : null;
+            const resolvedBranchId = branchData?.branch_id || branchId;
+            const resolvedCompanyId = branchData?.company_id || (window.currentCompany?.company_id || '');
+
+            try {
+                if (window.databases && window.appwriteConfig && window.Query) {
+                    const queries = [window.Query.equal('company_id', resolvedCompanyId)];
+                    if (resolvedBranchId) queries.push(window.Query.equal('branch_id', resolvedBranchId));
+                    const result = await window.databases.listDocuments(
+                        window.appwriteConfig.DATABASE_ID,
+                        window.appwriteConfig.RATINGS_TABLE,
+                        queries
+                    );
+                    reviews = (result.documents || []).map(doc => ({
+                        id: doc.$id || doc.rating_id,
+                        name: 'Anonymous',
+                        rating: doc.stars,
+                        comment: doc.comment || '',
+                        tags: Array.isArray(doc.product_tags) ? doc.product_tags : [],
+                        date: doc.created_at ? new Date(doc.created_at) : (doc.$createdAt ? new Date(doc.$createdAt) : new Date())
+                    }));
+                    return;
+                }
+            } catch (e) {
+                console.error('Failed to load ratings from Appwrite, falling back to localStorage', e);
+            }
+
+            const storageKey = `reviews_${resolvedCompanyId || 'unknown'}_${resolvedBranchId || 'all'}`;
+            const savedReviews = localStorage.getItem(storageKey);
             if (savedReviews) {
                 const parsed = JSON.parse(savedReviews);
                 reviews = parsed.map(review => ({
                     ...review,
-                    date: new Date(review.date)
+                    date: review.date ? new Date(review.date) : new Date()
                 }));
+            } else {
+                reviews = [];
             }
         }
 
         function saveReviews() {
-            localStorage.setItem(`reviews_${currentCompany.id}`, JSON.stringify(reviews));
+            const urlParams = new URLSearchParams(window.location.search);
+            const branchId = urlParams.get('branch_id');
+            const branchData = window.currentCompany && window.currentCompany.branch_id ? window.currentCompany : null;
+            const resolvedBranchId = branchData?.branch_id || branchId;
+            const resolvedCompanyId = branchData?.company_id || (window.currentCompany?.company_id || '');
+            const storageKey = `reviews_${resolvedCompanyId || 'unknown'}_${resolvedBranchId || 'all'}`;
+            localStorage.setItem(storageKey, JSON.stringify(reviews));
         }
 
         function calculateRatingStats() {
@@ -4670,22 +4880,33 @@
         function updateRatingDisplay() {
             const stats = calculateRatingStats();
             
-            document.querySelector('.text-white.font-bold.text-xl').textContent = `${stats.average} rating`;
-            document.querySelector('.text-white.font-semibold.text-lg').textContent = `${stats.total} reviews`;
+            const ratingView = document.getElementById('view-rating');
+            if (!ratingView) return;
+            ratingView.querySelector('.text-white.font-bold.text-xl').textContent = `${stats.average} rating`;
+            ratingView.querySelector('.text-white.font-semibold.text-lg').textContent = `${stats.total} reviews`;
+
+            const ratingBarsContainer = ratingView.querySelector('.mt-4.flex.flex-col.gap-2');
+            const barRows = ratingBarsContainer ? ratingBarsContainer.querySelectorAll(':scope > .flex.flex-row.items-center.gap-2') : [];
 
             const starLabels = [5, 4, 3, 2, 1];
             starLabels.forEach((star, index) => {
-                const barIndex = 5 - star;
-                const percentage = stats.distribution[barIndex];
-                const barContainer = document.querySelectorAll('.flex.flex-row.items-center.gap-2')[index];
-                if (barContainer) {
-                    const bar = barContainer.querySelector('.bg-white.h-full');
-                    const percentageText = barContainer.querySelector('.text-white.font-medium.text-lg');
+                // Correct mapping: 1-star -> index 0, ..., 5-star -> index 4
+                const percentage = stats.distribution[star - 1];
+                const row = barRows[index];
+                if (row) {
+                    const bar = row.querySelector('.bg-white.h-full');
+                    const percentageText = row.querySelector('.text-white.font-medium.text-lg');
                     if (bar) bar.style.width = `${percentage}%`;
                     if (percentageText) percentageText.textContent = `${percentage}%`;
                 }
             });
         }
+
+        // Initialize ratings view
+        loadReviews().then(() => {
+            updateRatingDisplay();
+            renderReviews();
+        });
 
         function renderReviews() {
             const container = document.querySelector('#view-rating .flex.flex-col.gap-4');
@@ -4918,6 +5139,317 @@
                 
                 console.log('Schedule Pickup button event listeners added');
             }
+        });
+    </script>
+    <script>
+        // Branch data fetching for schedule.html
+        async function fetchBranchDataForSchedule() {
+            try {
+                // Get branch_id from URL parameters
+                const urlParams = new URLSearchParams(window.location.search);
+                let branchId = urlParams.get('branch_id');
+                
+                if (!branchId) {
+                    console.warn('No branch_id found in URL parameters');
+                    return;
+                }
+                
+                console.log(' Fetching branch data for branch_id:', branchId);
+                
+                // Force refresh to get fresh data from database (bypass cache)
+                console.log(' Forcing data refresh from database...');
+                const companyData = await window.companyDataManager.refreshCompanyData();
+                
+                console.log(' Searching for branch_id:', branchId);
+                console.log(' Data type of branchId:', typeof branchId);
+                console.log(' Length of branchId:', branchId.length);
+                
+                let branchData = null;
+                
+                // Try multiple search approaches
+                for (let i = 0; i < companyData.length; i++) {
+                    const branch = companyData[i];
+                    console.log(` Checking branch ${i + 1}:`);
+                    console.log(`  - branch_id: "${branch.branch_id}" (type: ${typeof branch.branch_id}, length: ${branch.branch_id.length})`);
+                    console.log(`  - branch_name: "${branch.branch_name}"`);
+                    
+                    // Try exact match
+                    if (branch.branch_id === branchId) {
+                        branchData = branch;
+                        console.log(' Found exact match!');
+                        break;
+                    }
+                    
+                    // Try string conversion match (in case of type issues)
+                    if (String(branch.branch_id) === String(branchId)) {
+                        branchData = branch;
+                        console.log(' Found string conversion match!');
+                        break;
+                    }
+                }
+                
+                // If not found, try to auto-correct common wrong IDs
+                if (!branchData) {
+                    console.log(' Branch not found, attempting auto-correction...');
+                    
+                    // Map of common wrong IDs to correct ones
+                    const idCorrections = {
+                        '68b8cb454e339050f5b0': '68b8cb42defcefb9507b', // One piece
+                        '694c82027fceaf9bd962': '694c82005940d48eecae', // YAQSON HQ
+                    };
+                    
+                    if (idCorrections[branchId]) {
+                        const correctId = idCorrections[branchId];
+                        console.log(` Auto-correcting ID: ${branchId} → ${correctId}`);
+                        
+                        // Update URL without page reload
+                        const newUrl = `${window.location.pathname}?branch_id=${correctId}`;
+                        window.history.replaceState({}, '', newUrl);
+                        
+                        // Search again with correct ID
+                        for (let i = 0; i < companyData.length; i++) {
+                            const branch = companyData[i];
+                            if (branch.branch_id === correctId) {
+                                branchData = branch;
+                                console.log(' Found branch after auto-correction!');
+                                break;
+                            }
+                        }
+                    }
+                }
+                
+                if (!branchData) {
+                    console.error(' Branch not found with branch_id:', branchId);
+                    console.log(' Available branch IDs:');
+                    companyData.forEach((branch, index) => {
+                        console.log(`  ${index + 1}. branch_id: "${branch.branch_id}" - branch_name: "${branch.branch_name}"`);
+                    });
+                    return;
+                }
+                
+                console.log(' Found branch data:', branchData);
+                
+                // Update HTML elements with branch data
+                await updateBranchDataInHTML(branchData);
+                
+            } catch (error) {
+                console.error(' Error fetching branch data:', error);
+            }
+        }
+        
+        async function updateBranchDataInHTML(branchData) {
+            // 1. Update header image for banner
+            const bannerImage = document.querySelector('.absolute.inset-0.w-full.h-\\[180px\\].overflow-hidden img');
+            if (bannerImage && branchData.header_image) {
+                bannerImage.src = branchData.header_image;
+                console.log(' Updated banner image:', branchData.header_image);
+            }
+            
+            // 2. Update profile image
+            const profileImage = document.getElementById('shopProfileImage');
+            if (profileImage && branchData.profile_image) {
+                profileImage.src = branchData.profile_image;
+                console.log(' Updated profile image:', branchData.profile_image);
+            }
+            
+            // 3. Update company name and location
+            const companyNameElement = document.querySelector('h1.text-white.text-2xl.font-bold');
+            if (companyNameElement && branchData.branch_name) {
+                companyNameElement.textContent = branchData.branch_name;
+                console.log(' Updated company name:', branchData.branch_name);
+            }
+            
+            const locationElement = document.querySelector('p.text-\\[\\#808080\\].text-lg.mt-1');
+            if (locationElement && branchData.location) {
+                locationElement.textContent = branchData.location;
+                console.log(' Updated location:', branchData.location);
+            }
+            
+            // 4. Update description with email
+            const descriptionText = document.getElementById('descriptionText');
+            if (descriptionText) {
+                // Combine description and email with || separator
+                let descriptionContent = branchData.description || 'No description available';
+                if (branchData.email) {
+                    descriptionContent += ` || ${branchData.email}`;
+                }
+                descriptionText.textContent = descriptionContent;
+                console.log(' Updated description with email');
+            }
+            
+            // 5. Update read more text if needed
+            const readMoreText = document.getElementById('readMoreText');
+            if (readMoreText && branchData.description) {
+                // Adjust read more text based on description length
+                const isLongDescription = branchData.description.length > 100;
+                readMoreText.textContent = isLongDescription ? 'Read less' : 'Read more';
+            }
+            
+            // 6. Update social media links
+            await updateSocialMediaLinks(branchData);
+            
+            // 7. Update working days and hours
+            updateWorkingDaysFromDB(branchData);
+        }
+        
+        // Update social media links - fetch from social_media collection
+        async function updateSocialMediaLinks(branchData) {
+            console.log('🔍 Checking social media fields in branchData:', branchData);
+            
+            try {
+                // Fetch social media data from social_media collection for this branch
+                const socialMediaQuery = [
+                    window.Query.equal('branch_id', branchData.branch_id)
+                ];
+                
+                const socialMediaResponse = await window.databases.listDocuments(
+                    window.appwriteConfig.DATABASE_ID,
+                    'social_media',
+                    socialMediaQuery
+                );
+                
+                console.log('📱 Social media data from social_media collection:', socialMediaResponse.documents);
+                
+                if (socialMediaResponse.documents.length > 0) {
+                    const socialData = socialMediaResponse.documents[0];
+                    
+                    const socialPlatforms = {
+                        'Facebook': socialData.facebook || socialData.facebook_url || '',
+                        'Instagram': socialData.instagram || socialData.instagram_url || '',
+                        'Twitter': socialData.twitter || socialData.twitter_url || '',
+                        'LinkedIn': socialData.linkedin || socialData.linkedin_url || '',
+                        'Discord': socialData.discord || socialData.discord_url || ''
+                    };
+                    
+                    console.log('📱 Social media URLs found:', socialPlatforms);
+                    
+                    // Update each social media icon click handler
+                    Object.keys(socialPlatforms).forEach(platform => {
+                        const socialUrl = socialPlatforms[platform];
+                        
+                        // Create new click handler function
+                        const newHandler = socialUrl ? 
+                            `window.open('${socialUrl}', '_blank')` : 
+                            `showSocialModal('${platform}')`;
+                        
+                        // Update onclick attribute for all social media icons
+                        const socialIcons = document.querySelectorAll(`div[onclick*="${platform}"]`);
+                        socialIcons.forEach(icon => {
+                            icon.setAttribute('onclick', newHandler);
+                        });
+                        
+                        console.log(` Updated ${platform}: ${socialUrl ? 'Link available - ' + socialUrl : 'Show empty modal'}`);
+                    });
+                } else {
+                    console.log('📱 No social media data found for this branch');
+                    // Show empty modal for all platforms
+                    ['Facebook', 'Instagram', 'Twitter', 'LinkedIn', 'Discord'].forEach(platform => {
+                        const socialIcons = document.querySelectorAll(`div[onclick*="${platform}"]`);
+                        socialIcons.forEach(icon => {
+                            icon.setAttribute('onclick', `showSocialModal('${platform}')`);
+                        });
+                    });
+                }
+            } catch (error) {
+                console.error(' Error fetching social media data:', error);
+            }
+        }
+        
+        // Update working days from database
+        function updateWorkingDaysFromDB(branchData) {
+            console.log('🕐 Working days data from branchData:', branchData.working_days);
+            console.log('🕐 Raw working days data:', JSON.stringify(branchData.working_days, null, 2));
+            
+            // Get working days data from branchData - it should be an array from the database
+            let workingDays = {};
+            
+            if (branchData.working_days && Array.isArray(branchData.working_days)) {
+                // Convert array format to object format for easier access
+                workingDays = {};
+                branchData.working_days.forEach((day, index) => {
+                    console.log(`🕐 Processing day ${index}:`, day);
+                    
+                    if (day.day && day.time) {
+                        console.log(`🕐 Day ${day.day} has time: ${day.time}`);
+                        
+                        // Parse time format like "8:00 AM - 6:00 PM"
+                        const timeMatch = day.time.match(/(\d{1,2}:\d{2}\s*[AP]M)\s*-\s*(\d{1,2}:\d{2}\s*[AP]M)/i);
+                        if (timeMatch) {
+                            const dayKey = day.day.toLowerCase();
+                            workingDays[dayKey] = {
+                                open: timeMatch[1],
+                                close: timeMatch[2],
+                                isOpen: true,
+                                originalTime: day.time // Keep original for debugging
+                            };
+                            console.log(`🕐 Successfully parsed ${day.day}: ${timeMatch[1]} - ${timeMatch[2]}`);
+                        } else {
+                            // Try other formats like "8:00 - 18:00"
+                            const simpleTimeMatch = day.time.match(/(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})/);
+                            if (simpleTimeMatch) {
+                                const dayKey = day.day.toLowerCase();
+                                workingDays[dayKey] = {
+                                    open: simpleTimeMatch[1],
+                                    close: simpleTimeMatch[2],
+                                    isOpen: true,
+                                    originalTime: day.time
+                                };
+                                console.log(`🕐 Successfully parsed ${day.day} (simple format): ${simpleTimeMatch[1]} - ${simpleTimeMatch[2]}`);
+                            } else {
+                                console.log(`🕐 Failed to parse time for ${day.day}: "${day.time}"`);
+                            }
+                        }
+                    } else {
+                        console.log(`🕐 Day ${index} missing day or time field:`, day);
+                    }
+                });
+            } else if (branchData.workingHours) {
+                workingDays = branchData.workingHours;
+                console.log('🕐 Using workingHours from branchData');
+            } else if (typeof branchData.working_days === 'object') {
+                workingDays = branchData.working_days;
+                console.log('🕐 Using working_days as object');
+            }
+            
+            console.log('🕐 Processed working days:', workingDays);
+            console.log('🕐 Final working days JSON:', JSON.stringify(workingDays, null, 2));
+            
+            // Update the currentCompany object with new working hours
+            if (window.currentCompany) {
+                window.currentCompany.workingHours = workingDays;
+                console.log('🕐 Updated window.currentCompany.workingHours');
+            }
+            
+            // Update the working days select and display (only call once)
+            updateWorkingHours();
+            
+            // Only set current day once to prevent duplication
+            if (!window.currentDaySet) {
+                setCurrentDay();
+                window.currentDaySet = true;
+            }
+            
+            console.log(' Updated working days from database:', workingDays);
+        }
+        
+        // Initialize branch data fetching when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            // Clear any cached company data to force fresh fetch
+            if (window.companyDataManager) {
+                window.companyDataManager.lastFetchTime = null;
+                window.companyDataManager.companies = [];
+                window.companyDataManager.branches = [];
+                window.companyDataManager.workingDays = [];
+            }
+            
+            // Clear any localStorage cache
+            localStorage.removeItem('companyDataCache');
+            localStorage.removeItem('branchesCache');
+            
+            // Wait a bit for company data manager to be ready
+            setTimeout(() => {
+                fetchBranchDataForSchedule();
+            }, 1500); // Increased delay to ensure everything is loaded
         });
     </script>
     <script src="../public/js/notifications.js"></script>

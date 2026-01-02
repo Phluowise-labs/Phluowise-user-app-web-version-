@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -213,22 +213,40 @@
         }
 
         .refresh-spinner {
-            width: 16px;
-            height: 16px;
-            border: 2px solid transparent;
-            border-top: 2px solid currentColor;
+            width: 36px;
+            height: 36px;
+            position: relative;
+        }
+        .refresh-spinner::before,
+        .refresh-spinner::after {
+            content: "";
+            position: absolute;
+            inset: 0;
             border-radius: 50%;
-            animation: spin 1s linear infinite;
+            box-sizing: border-box;
+        }
+        .refresh-spinner::before {
+            border: 3px solid transparent;
+            border-top-color: #3B74FF;
+            border-right-color: #3B74FF;
+            filter: drop-shadow(0 0 6px rgba(59, 116, 255, 0.6));
+            animation: spin 0.9s linear infinite;
+        }
+        .refresh-spinner::after {
+            inset: 6px;
+            border: 3px solid transparent;
+            border-bottom-color: #8BB0FF;
+            border-left-color: #8BB0FF;
+            animation: spinReverse 1.1s linear infinite;
         }
 
         @keyframes spin {
-            0% {
-                transform: rotate(0deg);
-            }
-
-            100% {
-                transform: rotate(360deg);
-            }
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        @keyframes spinReverse {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(-360deg); }
         }
 
         .search-container:focus-within {
@@ -600,7 +618,9 @@
         <span id="refreshText">Pull to refresh</span>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/appwrite@13.0.0"></script>
     <script src="../public/js/appwriteConfig.js"></script>
+    <script src="../public/js/companyData.js"></script>
     <script src="../public/js/theme.js"></script>
     <script>
         let cardSingle = true; // true = list view, false = grid view
@@ -610,15 +630,9 @@
         let isRefreshing = false;
         let locationPermissionGranted = localStorage.getItem('locationPermissionGranted') === 'true';
 
-        // Sample companies data (placeholder)
-        const companies = [
-            { id: 1, name: 'Voltic Water Company', location: 'Accra, Ghana', time: '23 minutes away', image: '../public/images/main/ScheduleImage1.png', coordinates: { lat: 5.6037, lng: -0.1870 } },
-            { id: 2, name: 'Bel-Aqua Ghana', location: 'Tema, Ghana', time: '15 minutes away', image: '../public/images/main/ScheduleImage1.png', coordinates: { lat: 5.6699, lng: -0.0166 } },
-            { id: 3, name: 'Special Ice Water', location: 'Kumasi, Ghana', time: '45 minutes away', image: '../public/images/main/ScheduleImage1.png', coordinates: { lat: 6.6885, lng: -1.6244 } },
-            { id: 4, name: 'Everpure Water', location: 'Takoradi, Ghana', time: '30 minutes away', image: '../public/images/main/ScheduleImage1.png', coordinates: { lat: 4.8845, lng: -1.7554 } },
-            { id: 5, name: 'Aqua Splash', location: 'Cape Coast, Ghana', time: '50 minutes away', image: '../public/images/main/ScheduleImage1.png', coordinates: { lat: 5.1036, lng: -1.2466 } },
-            { id: 6, name: 'Pure Life Water', location: 'Ho, Ghana', time: '60 minutes away', image: '../public/images/main/ScheduleImage1.png', coordinates: { lat: 6.6000, lng: 0.4700 } },
-        ];
+        // Companies data will be loaded from database
+        let companies = [];
+        let companiesDataLoaded = false;
 
         // Handle search input
         function handleSearch() {
@@ -722,6 +736,20 @@
         // Render companies based on view mode
         function renderCompanies() {
             const container = document.getElementById('companiesContainer');
+
+            // Show loading indicator while companies are being fetched
+            const manager = window.companyDataManager;
+            const isLoadingNow = manager && manager.isLoading;
+            if (!companiesDataLoaded || isLoadingNow) {
+                container.innerHTML = `
+                    <div class="flex flex-col items-center justify-center py-12">
+                        <div class="refresh-spinner"></div>
+                        <p class="text-white mt-3 text-base font-medium">Loading companies...</p>
+                    </div>
+                `;
+                return;
+            }
+
             const filteredCompanies = getFilteredCompanies();
             let html = '';
 
@@ -740,13 +768,13 @@
                 filteredCompanies.forEach((company, index) => {
                     const distanceText = company.distance ? `${Math.round(company.distance)} km away` : company.time;
                     html += `
-                        <a href="schedule.html?branch_id=${company.id}" 
+                        <a href="schedule.html?branch_id=${company.branch_id}" 
                            class="card-bg w-full flex items-center justify-center px-4"
                            style="height: 120px; margin-top: 4px;">
                             <div class="flex flex-row w-full items-center gap-3">
                                 <!-- Image -->
                                 <div class="rounded-[10px] bg-[#808080] overflow-hidden" style="width: 22%; height: 89px;">
-                                    <img src="${company.image}" class="w-full h-full object-cover" alt="${company.name}">
+                                    <img src="${company.profile_image || company.image}" class="w-full h-full object-cover" alt="${company.name}">
                                 </div>
                                 <!-- Info -->
                                 <div class="flex flex-col gap-2 ml-2 text-left" style="width: 47%;">
@@ -772,16 +800,16 @@
                 filteredCompanies.forEach((company, index) => {
                     const distanceText = company.distance ? `${Math.round(company.distance)} km away` : company.time;
                     html += `
-                        <a href="schedule.html?branch_id=${company.id}" 
+                        <a href="schedule.html?branch_id=${company.branch_id}" 
                            class="flex flex-col items-center rounded-[16px] overflow-hidden"
                            style="height: 175px; margin-bottom: 10px;">
                             <div class="w-full" style="height: 60%;">
-                                <img src="${company.image}" class="w-full h-full object-cover" alt="${company.name}">
+                                <img src="${company.profile_image || company.image}" class="w-full h-full object-cover" alt="${company.name}">
                             </div>
                             <div class="card-bg relative w-full p-3" style="height: 40%;">
                                 <div class="relative rounded-lg overflow-hidden p-[1px]"
                                      style="height: 52px; width: 55px; top: -35px; background-color: #40444B;">
-                                    <img src="${company.image}" class="w-full h-full object-cover" alt="Logo">
+                                    <img src="${company.profile_image || company.image}" class="w-full h-full object-cover" alt="Logo">
                                 </div>
                                 <div class="relative text-left" style="top: -30px;">
                                     <p class="text-white font-medium text-base text-truncate" style="width: 100%;">
@@ -961,22 +989,14 @@
 
         async function refreshCompaniesData(previousState) {
             try {
-                // Simulate API call with better error handling
-                const refreshPromise = new Promise((resolve, reject) => {
-                    setTimeout(() => {
-                        // Simulate random success/failure for demo
-                        if (Math.random() > 0.1) { // 90% success rate
-                            resolve({ status: 'success', timestamp: Date.now() });
-                        } else {
-                            reject(new Error('Network error'));
-                        }
-                    }, 1200);
-                });
-
-                const result = await refreshPromise;
-
-                // Update companies data with fresh information
-                await updateCompaniesData();
+                console.log('🔄 Refreshing company data from database...');
+                
+                // Fetch fresh data from database
+                const freshData = await window.companyDataManager.refreshCompanyData();
+                
+                // Update local companies array
+                companies = freshData;
+                companiesDataLoaded = true;
 
                 // Re-render with current filters and search
                 renderCompanies();
@@ -988,31 +1008,22 @@
                 }
 
                 // Log refresh activity
-                console.log('✅ Data refreshed successfully at', new Date(result.timestamp).toLocaleTimeString());
+                console.log('✅ Company data refreshed successfully from database');
 
-                return result;
+                return { status: 'success', timestamp: Date.now() };
             } catch (error) {
-                console.error('❌ Refresh error:', error);
+                console.error('❌ Database refresh error:', error);
                 throw error;
             }
         }
 
         async function updateCompaniesData() {
-            // In a real application, this would fetch from your API
-            // For demo, we'll simulate data updates with some randomization
-            return new Promise((resolve) => {
-                setTimeout(() => {
-                    // Simulate slight variations in company data
-                    companies.forEach(company => {
-                        // Occasionally update delivery times
-                        if (Math.random() > 0.7) {
-                            const timeVariations = ['12 minutes away', '18 minutes away', '25 minutes away', '35 minutes away'];
-                            company.time = timeVariations[Math.floor(Math.random() * timeVariations.length)];
-                        }
-                    });
-                    resolve();
-                }, 500);
-            });
+            // This function is now handled by companyDataManager
+            if (!companiesDataLoaded) {
+                console.log('📦 Loading company data from database...');
+                companies = await window.companyDataManager.fetchCompanyData();
+                companiesDataLoaded = true;
+            }
         }
 
         function updateDistances() {
@@ -1051,6 +1062,9 @@
 
             // Initialize pull-to-refresh functionality
             initPullToRefresh();
+
+            // Load company data from database
+            loadInitialCompanyData();
 
             // Check location permission after 5 seconds (simulating RN logic)
             setTimeout(() => {
@@ -1092,6 +1106,31 @@
             renderToggleIcon();
             renderCompanies();
         });
+
+        // Load initial company data from database
+        async function loadInitialCompanyData() {
+            try {
+                // Wait for Appwrite to be available
+                if (!window.appwriteConfig || !window.databases) {
+                    console.log('⏳ Waiting for Appwrite to initialize...');
+                    // Wait a bit and retry
+                    setTimeout(() => loadInitialCompanyData(), 1000);
+                    return;
+                }
+
+                console.log('🔄 Loading initial company data from database...');
+                companies = await window.companyDataManager.fetchCompanyData();
+                companiesDataLoaded = true;
+                console.log(`✅ Loaded ${companies.length} companies from database`);
+                renderCompanies();
+            } catch (error) {
+                console.error('❌ Error loading initial company data:', error);
+                // Use fallback data if database fails
+                companies = window.companyDataManager.getFallbackData();
+                companiesDataLoaded = true;
+                renderCompanies();
+            }
+        }
 
         // Sliding Menu Functions
         function toggleMenu() {
