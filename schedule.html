@@ -8,7 +8,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&icon_names=verified,flag_2" />
-    <link rel="stylesheet" href="../public/css/notifications.css" />
+    <link rel="stylesheet" href="css/notifications.css" />
     <script>
         tailwind.config = {
             theme: {
@@ -1300,13 +1300,13 @@
     <div class="relative w-full">
         <!-- Banner Background -->
         <div class="absolute inset-0 w-full h-[180px] overflow-hidden">
-            <img src="../public/images/main/adsBack.png" class="w-full h-full object-cover" alt="Advertisement Banner">
+            <img src="images/main/adsBack.png" class="w-full h-full object-cover" alt="Advertisement Banner">
         </div>
         
         <!-- Back Button -->
         <div class="absolute top-5 left-4 z-20">
             <button onclick="window.history.back()" class="w-10 h-10 flex items-center justify-center">
-                <img src="../public/images/main/ArrowLeftIcon.png" class="w-6 h-6 object-contain">
+                <img src="images/main/ArrowLeftIcon.png" class="w-6 h-6 object-contain">
             </button>
         </div>
 
@@ -1318,7 +1318,7 @@
         <div class="absolute top-[60px] left-10 z-10 p-2 rounded-[14px]"
             style="background-color: var(--bottom-sheet-color); height: 90px; width: 95px;">
             <div class="w-full h-full rounded-[14px] overflow-hidden">
-                <img id="shopProfileImage" src="../public/images/main/ScheduleImage1.png"
+                <img id="shopProfileImage" src="images/main/ScheduleImage1.png"
                     class="w-full h-full object-cover">
             </div>
         </div>
@@ -1748,10 +1748,10 @@
             class="pointer-events-auto bg-[#1D1D1D] w-full max-w-[400px] h-[400px] rounded-[30px] p-5 flex flex-col items-center relative transform translate-y-full transition-transform duration-300">
             <button onclick="closeProductModal()"
                 class="absolute top-4 left-4 z-10 w-10 h-10 flex items-center justify-center">
-                <img src="../public/images/main/ArrowLeftIcon.png" class="w-6 h-6">
+                <img src="images/main/ArrowLeftIcon.png" class="w-6 h-6">
             </button>
             <div class="w-full h-full flex flex-col items-center justify-center gap-4">
-                <img id="modalProductImage" src="../public/images/main/ProductImage1.png"
+                <img id="modalProductImage" src="images/main/ProductImage1.png"
                     class="h-[200px] object-contain">
                 <h2 id="modalProductName" class="text-white text-2xl font-bold">Product Name</h2>
                 <p id="modalProductDescription" class="text-white text-lg text-center px-4">Product Description</p>
@@ -2583,10 +2583,10 @@
 
         // Sample products (exact from Products.tsx structure)
         const products = [
-            { price: 10, name: 'Sachets water', type: 'Description of product', image: '../public/images/main/ProductImage1.png' },
-            { price: 20, name: 'Bottle water', type: 'Description of product', image: '../public/images/main/ProductImage1.png' },
-            { price: 15, name: 'Dispenser', type: 'Description of product', image: '../public/images/main/ProductImage1.png' },
-            { price: 12, name: 'Sachets water', type: 'Description of product', image: '../public/images/main/ProductImage1.png' }
+            { price: 10, name: 'Sachets water', type: 'Description of product', image: 'images/main/ProductImage1.png' },
+            { price: 20, name: 'Bottle water', type: 'Description of product', image: 'images/main/ProductImage1.png' },
+            { price: 15, name: 'Dispenser', type: 'Description of product', image: 'images/main/ProductImage1.png' },
+            { price: 12, name: 'Sachets water', type: 'Description of product', image: 'images/main/ProductImage1.png' }
         ];
 
         // Rating system state
@@ -5452,7 +5452,7 @@
             }, 1500); // Increased delay to ensure everything is loaded
         });
     </script>
-    <script src="../public/js/notifications.js"></script>
+    <script src="js/notifications.js"></script>
 </body>
 
 </html>

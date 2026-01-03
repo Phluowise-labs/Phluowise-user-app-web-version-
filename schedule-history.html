@@ -10,7 +10,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <link rel="stylesheet"
         href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&icon_names=verified" />
-    <link rel="stylesheet" href="../public/css/notifications.css" />
+    <link rel="stylesheet" href="css/notifications.css" />
     <script>
         tailwind.config = {
             theme: {
@@ -339,7 +339,7 @@
             <!-- Profile Image Container -->
             <div class="relative flex items-center justify-center rounded-full border-[0.5px] border-[#292B2F]"
                 style="height: 110px; width: 110px; background-color: #292B2F;">
-                <img src="../public/images/main/ProfileImage.png" class="w-[62px] h-[62px] object-contain"
+                <img src="images/main/ProfileImage.png" class="w-[62px] h-[62px] object-contain"
                     alt="Profile">
 
                 <!-- Edit Button -->
@@ -781,8 +781,8 @@
         </a>
     </div>
 
-    <script src="../public/js/appwriteConfig.js"></script>
-    <script src="../public/js/theme.js"></script>
+    <script src="js/appwriteConfig.js"></script>
+    <script src="js/theme.js"></script>
     <script>
         let currentView = 'status';
         let orders = [];
@@ -1213,12 +1213,12 @@
                 }
 
                 // Determine the appropriate image based on product type
-                let productImage = '../public/images/main/ScheduleImage1.png';
+                let productImage = 'images/main/ScheduleImage1.png';
                 if (order.product && (order.product.toLowerCase().includes('dispenser') || order.product.toLowerCase().includes('bottle'))) {
                     if (order.product.toLowerCase().includes('20l') || order.bottleSize === '20L' || order.isLargeBottle) {
-                        productImage = '../public/images/products/large-bottle.jpg';
+                        productImage = 'images/products/large-bottle.jpg';
                     } else {
-                        productImage = '../public/images/products/dispenser.jpg';
+                        productImage = 'images/products/dispenser.jpg';
                     }
                 }
 
@@ -1512,9 +1512,9 @@
             }
 
             // Determine the appropriate image based on bottle type
-            let bottleImage = '../public/images/products/dispenser.jpg';
+            let bottleImage = 'images/products/dispenser.jpg';
             if (bottle.isLargeBottle || bottle.size === '20L') {
-                bottleImage = '../public/images/products/large-bottle.jpg';
+                bottleImage = 'images/products/large-bottle.jpg';
             }
 
             // Get status tag
@@ -1636,12 +1636,12 @@
             const detailsArea = document.getElementById('orderDetailsContentArea');
 
             // Determine the appropriate image based on product type
-            let productImage = '../public/images/main/ScheduleImage1.png';
+            let productImage = 'images/main/ScheduleImage1.png';
             if (currentOrderForDetails.product && (currentOrderForDetails.product.toLowerCase().includes('dispenser') || currentOrderForDetails.product.toLowerCase().includes('bottle'))) {
                 if (currentOrderForDetails.product.toLowerCase().includes('20l') || currentOrderForDetails.bottleSize === '20L' || currentOrderForDetails.isLargeBottle) {
-                    productImage = '../public/images/products/large-bottle.jpg';
+                    productImage = 'images/products/large-bottle.jpg';
                 } else {
-                    productImage = '../public/images/products/dispenser.jpg';
+                    productImage = 'images/products/dispenser.jpg';
                 }
             }
 
@@ -2026,7 +2026,7 @@
             }
         });
     </script>
-    <script src="../public/js/notifications.js"></script>
+    <script src="js/notifications.js"></script>
 </body>
 
 </html>

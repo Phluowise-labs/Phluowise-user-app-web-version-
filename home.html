@@ -304,7 +304,7 @@
                 <!-- Profile Image Container -->
                 <div class="relative flex items-center justify-center rounded-full border-[0.5px] border-[#292B2F]"
                     style="height: 110px; width: 110px; background-color: #292B2F;">
-                    <img src="../public/images/main/ProfileImage.png" class="w-[62px] h-[62px] object-contain"
+                    <img src="images/main/ProfileImage.png" class="w-[62px] h-[62px] object-contain"
                         alt="Profile">
 
                     <!-- Edit Button -->
@@ -568,8 +568,8 @@
             <div class="flex-1 w-full items-center flex-col justify-between relative">
                 <!-- Image Section -->
                 <div class="items-center flex-1 w-full relative flex items-center justify-center">
-                    <img src="../public/images/auth/Ellipse.png" class="w-[119px] h-[117px] object-contain">
-                    <img src="../public/images/auth/Location.png"
+                    <img src="images/auth/Ellipse.png" class="w-[119px] h-[117px] object-contain">
+                    <img src="images/auth/Location.png"
                         class="w-[51px] absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 object-contain">
                 </div>
 
@@ -619,9 +619,9 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/appwrite@13.0.0"></script>
-    <script src="../public/js/appwriteConfig.js"></script>
-    <script src="../public/js/companyData.js"></script>
-    <script src="../public/js/theme.js"></script>
+    <script src="js/appwriteConfig.js"></script>
+    <script src="js/companyData.js"></script>
+    <script src="js/theme.js"></script>
     <script>
         let cardSingle = true; // true = list view, false = grid view
         let currentFilter = 'around';
@@ -784,7 +784,7 @@
                                 </div>
                                 <!-- View Shop -->
                                 <div class="flex flex-col items-center justify-center" style="width: 20%; height: 60px;">
-                                    <img src="../public/images/main/ShopImage.png" class="w-7 h-7" alt="Shop">
+                                    <img src="images/main/ShopImage.png" class="w-7 h-7" alt="Shop">
                                     <span class="text-white text-base font-medium whitespace-nowrap">View shop</span>
                                 </div>
                             </div>
@@ -829,7 +829,7 @@
 
         function renderAdsBanner() {
             return `
-                <div class="ads-banner w-full flex flex-col items-center justify-center gap-6" style="height: 125px; background: url('../public/images/main/adsBack.png') no-repeat center center; background-size: cover;">
+                <div class="ads-banner w-full flex flex-col items-center justify-center gap-6" style="height: 125px; background: url('images/main/adsBack.png') no-repeat center center; background-size: cover;">
                     <span class="text-white text-base font-semibold">Register for Phluowise Business</span>
                     <button onclick="window.location.href='https://phluowise.com/company'" 
                             class="h-[40px] w-[150px] rounded-[100px] flex items-center justify-center border bg-white border-white">
@@ -1118,7 +1118,17 @@
                     return;
                 }
 
+                // Wait for companyDataManager to be available
+                if (!window.companyDataManager) {
+                    console.log('⏳ Waiting for CompanyDataManager to initialize...');
+                    setTimeout(() => loadInitialCompanyData(), 500);
+                    return;
+                }
+
                 console.log('🔄 Loading initial company data from database...');
+                console.log('🔍 CompanyDataManager available:', typeof window.companyDataManager);
+                console.log('🔍 fetchCompanyData method available:', typeof window.companyDataManager.fetchCompanyData);
+                
                 companies = await window.companyDataManager.fetchCompanyData();
                 companiesDataLoaded = true;
                 console.log(`✅ Loaded ${companies.length} companies from database`);
@@ -1126,7 +1136,38 @@
             } catch (error) {
                 console.error('❌ Error loading initial company data:', error);
                 // Use fallback data if database fails
-                companies = window.companyDataManager.getFallbackData();
+                if (window.companyDataManager && typeof window.companyDataManager.getFallbackData === 'function') {
+                    companies = window.companyDataManager.getFallbackData();
+                } else {
+                    // Hardcoded fallback if companyDataManager is not available
+                    companies = [
+                        {
+                            $id: 'fallback-1',
+                            name: 'Phluowise Demo',
+                            company_id: 'demo-company',
+                            email: 'demo@phluowise.com',
+                            branches: [
+                                {
+                                    $id: 'branch-1',
+                                    branch_id: 'demo-branch-1',
+                                    branch_name: 'Main Branch',
+                                    location: 'Accra, Ghana',
+                                    email: 'main@phluowise.com',
+                                    phone_number: '+233500000000',
+                                    is_active: true,
+                                    is_online: true
+                                }
+                            ],
+                            working_days: [
+                                { day: 'Monday', time: '8:00 AM - 6:00 PM' },
+                                { day: 'Tuesday', time: '8:00 AM - 6:00 PM' },
+                                { day: 'Wednesday', time: '8:00 AM - 6:00 PM' },
+                                { day: 'Thursday', time: '8:00 AM - 6:00 PM' },
+                                { day: 'Friday', time: '8:00 AM - 6:00 PM' }
+                            ]
+                        }
+                    ];
+                }
                 companiesDataLoaded = true;
                 renderCompanies();
             }
@@ -1218,7 +1259,6 @@
             }
         });
     </script>
-    <script src="../public/js/notifications.js"></script>
 </body>
 
 </html>

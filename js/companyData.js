@@ -167,7 +167,7 @@ class CompanyDataManager {
                     website: branch.website,
                     is_online: branch.is_online || false,
                     is_active: branch.is_active || false,
-                    profile_image: branch.profile_image || '../public/images/main/ScheduleImage1.png',
+                    profile_image: branch.profile_image || 'images/main/ScheduleImage1.png',
                     header_image: branch.header_image,
                     branch_type: branch.branch_type,
                     coordinates: this.generateCoordinates(branch.location),
@@ -217,7 +217,7 @@ class CompanyDataManager {
                 branch_name: 'Voltic Water Accra',
                 location: 'Accra, Ghana', 
                 time: '23 minutes away', 
-                image: '../public/images/main/ScheduleImage1.png', 
+                image: 'images/main/ScheduleImage1.png', 
                 coordinates: { lat: 5.6037, lng: -0.1870 },
                 is_online: true,
                 is_active: true,
@@ -237,7 +237,7 @@ class CompanyDataManager {
                 branch_name: 'Bel-Aqua Tema',
                 location: 'Tema, Ghana', 
                 time: '15 minutes away', 
-                image: '../public/images/main/ScheduleImage1.png', 
+                image: 'images/main/ScheduleImage1.png', 
                 coordinates: { lat: 5.6699, lng: -0.0166 },
                 is_online: true,
                 is_active: true,
@@ -257,7 +257,7 @@ class CompanyDataManager {
                 branch_name: 'Special Ice Kumasi',
                 location: 'Kumasi, Ghana', 
                 time: '45 minutes away', 
-                image: '../public/images/main/ScheduleImage1.png', 
+                image: 'images/main/ScheduleImage1.png', 
                 coordinates: { lat: 6.6885, lng: -1.6244 },
                 is_online: true,
                 is_active: true,
@@ -323,7 +323,49 @@ class CompanyDataManager {
 }
 
 // Create global instance
-window.companyDataManager = new CompanyDataManager();
+try {
+    window.companyDataManager = new CompanyDataManager();
+    console.log('✅ CompanyDataManager initialized successfully');
+} catch (error) {
+    console.error('❌ Failed to initialize CompanyDataManager:', error);
+    // Create a fallback instance with basic functionality
+    window.companyDataManager = {
+        fetchCompanyData: async function() {
+            console.log('🔄 Using fallback fetchCompanyData');
+            return this.getFallbackData();
+        },
+        getFallbackData: function() {
+            console.log('🔄 Using fallback company data');
+            return [
+                {
+                    $id: 'fallback-1',
+                    name: 'Phluowise Demo',
+                    company_id: 'demo-company',
+                    email: 'demo@phluowise.com',
+                    branches: [
+                        {
+                            $id: 'branch-1',
+                            branch_id: 'demo-branch-1',
+                            branch_name: 'Main Branch',
+                            location: 'Accra, Ghana',
+                            email: 'main@phluowise.com',
+                            phone_number: '+233500000000',
+                            is_active: true,
+                            is_online: true
+                        }
+                    ],
+                    working_days: [
+                        { day: 'Monday', time: '8:00 AM - 6:00 PM' },
+                        { day: 'Tuesday', time: '8:00 AM - 6:00 PM' },
+                        { day: 'Wednesday', time: '8:00 AM - 6:00 PM' },
+                        { day: 'Thursday', time: '8:00 AM - 6:00 PM' },
+                        { day: 'Friday', time: '8:00 AM - 6:00 PM' }
+                    ]
+                }
+            ];
+        }
+    };
+}
 
 // Export for module usage
 if (typeof module !== 'undefined' && module.exports) {
