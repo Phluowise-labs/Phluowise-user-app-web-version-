@@ -1482,9 +1482,10 @@
                         </div>
 
                         <!-- View Company Website Button (width: 225, top: 10, left: 20, rounded: 5, elevation: 5) -->
-                        <button
+                        <button id="websiteButton"
                             class="flex flex-row items-center gap-2 p-3 rounded-[5px] absolute top-[10px] left-[20px] rn-shadow z-[1000]"
-                            style="background-color: var(--bottom-sheet-color); width: 225px;">
+                            style="background-color: var(--bottom-sheet-color); width: 225px;"
+                            onclick="openCompanyWebsite()">
                             <svg class="w-6 h-6" fill="white" stroke="white" viewBox="0 0 24 24">
                                 <circle cx="12" cy="12" r="10" stroke="white" />
                                 <path d="M2 12h20" stroke="white" />
@@ -1497,11 +1498,11 @@
                         <!-- Contact Popup (width: 250, rounded: 10, bottom: 70, right: 20) -->
                         <div id="contactPopup" class="absolute bottom-[70px] right-[20px] hidden rounded-[10px] z-[1000]"
                             style="width: 250px; background-color: var(--bottom-sheet-color);">
-                            <button class="flex flex-row items-center gap-4 pl-4 w-full" style="height: 60px;">
+                            <button id="contactPopupPhoneButton" onclick="callCompany()" class="flex flex-row items-center gap-4 pl-4 w-full" style="height: 60px;">
                                 <div class="w-8 h-8 rounded-full border border-white flex items-center justify-center">
                                     <span class="text-white text-xl font-bold">+</span>
                                 </div>
-                                <span class="text-white text-lg font-[600] capitalize px-4 leading-5 whitespace-nowrap">+234 810 000 0000</span>
+                                <span id="contactPopupPhone" class="text-white text-lg font-[600] capitalize px-4 leading-5 whitespace-nowrap">+234 810 000 0000</span>
                             </button>
                         </div>
 
@@ -5099,8 +5100,27 @@
         }
 
         function callCompany() {
-            if (currentCompany.phone) {
-                window.location.href = `tel:${currentCompany.phone}`;
+            const phone = window.currentCompany?.phone || currentCompany.phone;
+            if (phone) {
+                console.log('📞 Calling phone:', phone);
+                window.location.href = `tel:${phone}`;
+            } else {
+                console.log('⚠️ No phone number available');
+            }
+        }
+        
+        function openCompanyWebsite() {
+            const website = window.currentCompany?.website;
+            if (website) {
+                console.log('🌐 Opening website:', website);
+                // Ensure URL has protocol
+                let url = website;
+                if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                    url = 'https://' + url;
+                }
+                window.open(url, '_blank');
+            } else {
+                console.log('⚠️ No website available');
             }
         }
 
@@ -5341,13 +5361,37 @@
                 console.log(' Updated description with email');
             }
             
-            // 5. Update read more text if needed
-            const readMoreText = document.getElementById('readMoreText');
-            if (readMoreText && branchData.description) {
-                // Adjust read more text based on description length
-                const isLongDescription = branchData.description.length > 100;
-                readMoreText.textContent = isLongDescription ? 'Read less' : 'Read more';
+            // 6. Update website and phone data
+            const websiteButton = document.getElementById('websiteButton');
+            if (websiteButton) {
+                if (branchData.website) {
+                    websiteButton.style.display = 'flex';
+                    console.log(' Website available:', branchData.website);
+                } else {
+                    websiteButton.style.display = 'none';
+                    console.log(' No website available, hiding button');
+                }
             }
+            
+            // Update contact popup phone number
+            const contactPopupPhone = document.getElementById('contactPopupPhone');
+            if (contactPopupPhone && branchData.phone_number) {
+                contactPopupPhone.textContent = branchData.phone_number;
+                console.log(' Updated contact popup phone:', branchData.phone_number);
+            } else {
+                console.log(' No phone number available for contact popup');
+            }
+            
+            // Update global currentCompany object with database values
+            window.currentCompany = {
+                ...window.currentCompany,
+                phone: branchData.phone_number,
+                website: branchData.website,
+                name: branchData.branch_name,
+                location: branchData.location,
+                email: branchData.email
+            };
+            console.log(' Updated company contact info - Phone:', branchData.phone_number, 'Website:', branchData.website);
             
             // 6. Update social media links
             await updateSocialMediaLinks(branchData);
