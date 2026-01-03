@@ -6,6 +6,7 @@ class CompanyDataManager {
         this.companies = [];
         this.branches = [];
         this.workingDays = [];
+        this.products = [];
         this.isLoading = false;
         this.lastFetchTime = null;
         this.cacheTimeout = 5 * 60 * 1000; // 5 minutes cache
@@ -26,22 +27,24 @@ class CompanyDataManager {
         try {
             console.log('🔄 Fetching company data from database...');
             
-            // Fetch companies, branches, and working days in parallel
-            const [companiesResponse, branchesResponse, workingDaysResponse] = await Promise.all([
+            // Fetch companies, branches, working days, and products in parallel
+            const [companiesResponse, branchesResponse, workingDaysResponse, productsResponse] = await Promise.all([
                 this.fetchCompanies(),
                 this.fetchBranches(),
-                this.fetchWorkingDays()
+                this.fetchWorkingDays(),
+                this.fetchProducts()
             ]);
 
             this.companies = companiesResponse;
             this.branches = branchesResponse;
             this.workingDays = workingDaysResponse;
+            this.products = productsResponse;
             this.lastFetchTime = Date.now();
 
             // Process and merge data
             const mergedData = this.mergeCompanyAndBranchData();
             
-            console.log(`✅ Successfully loaded ${mergedData.length} companies with branches and working days`);
+            console.log(`✅ Successfully loaded ${mergedData.length} companies with branches, working days, and products`);
             return mergedData;
 
         } catch (error) {
@@ -103,7 +106,7 @@ class CompanyDataManager {
                 ]
             );
             
-            console.log(`📍 Found ${response.documents.length} active branches`);
+            console.log('📍 Found', response.documents.length, 'active branches');
             return response.documents;
         } catch (error) {
             console.error('❌ Error fetching branches:', error);
@@ -114,27 +117,31 @@ class CompanyDataManager {
     // Fetch working days from working_days table
     async fetchWorkingDays() {
         try {
-            // Check if Appwrite is available
-            if (!window.databases || !window.appwriteConfig) {
-                console.error('❌ Appwrite not available for working days - checking if SDK loaded');
-                console.log('window.databases:', window.databases);
-                console.log('window.appwriteConfig:', window.appwriteConfig);
-                console.log('window.Appwrite:', window.Appwrite);
-                return [];
-            }
-
             const response = await window.databases.listDocuments(
                 window.appwriteConfig.DATABASE_ID,
-                window.appwriteConfig.WORKING_DAYS_TABLE,
-                [
-                    window.Query.orderAsc('day') // Order by day for consistency
-                ]
+                window.appwriteConfig.WORKING_DAYS_TABLE
             );
-            
-            console.log(`📅 Found ${response.documents.length} working days entries`);
             return response.documents;
         } catch (error) {
             console.error('❌ Error fetching working days:', error);
+            return [];
+        }
+    }
+
+    // Fetch products from database
+    async fetchProducts() {
+        try {
+            const response = await window.databases.listDocuments(
+                window.appwriteConfig.DATABASE_ID,
+                window.appwriteConfig.PRODUCTS_TABLE
+            );
+            console.log('📦 Raw product data from database:');
+            response.documents.forEach((p, index) => {
+                console.log(`📦 Product #${index + 1}: ${p.name} - Image: ${p.product_image || 'None'}`);
+            });
+            return response.documents;
+        } catch (error) {
+            console.error('❌ Error fetching products:', error);
             return [];
         }
     }
@@ -153,9 +160,14 @@ class CompanyDataManager {
                     wd.branch_id === branch.branch_id || wd.company_id === branch.company_id
                 );
 
+                // Get products for this branch/company
+                const branchProducts = this.products.filter(product => 
+                    product.branch_id === branch.branch_id || product.company_id === branch.company_id
+                );
+
                 // Create merged company object with branch info
                 const mergedCompany = {
-                    id: branch.$id, // Use branch document ID as the main ID
+                    id: branch.$id, // Use branch document ID as main ID
                     branch_id: branch.branch_id,
                     company_id: branch.company_id,
                     name: company.name,
@@ -167,11 +179,15 @@ class CompanyDataManager {
                     website: branch.website,
                     is_online: branch.is_online || false,
                     is_active: branch.is_active || false,
-                    profile_image: branch.profile_image || 'images/main/ScheduleImage1.png',
+                    profile_image: branch.profile_image,
                     header_image: branch.header_image,
                     branch_type: branch.branch_type,
                     coordinates: this.generateCoordinates(branch.location),
                     working_days: branchWorkingDays, // Add working days
+                    products: branchProducts.map(product => ({
+                        ...product,
+                        image: product.product_image || null // Map product_image to image field
+                    })), // Add products with corrected image field
                     // Additional fields for compatibility
                     time: this.generateTimeText(),
                     distance: null
@@ -210,68 +226,7 @@ class CompanyDataManager {
     // Get fallback data when database fails
     getFallbackData() {
         console.log('🔄 Using fallback company data');
-        return [
-            { 
-                id: 'fallback1', 
-                name: 'Voltic Water Company', 
-                branch_name: 'Voltic Water Accra',
-                location: 'Accra, Ghana', 
-                time: '23 minutes away', 
-                image: 'images/main/ScheduleImage1.png', 
-                coordinates: { lat: 5.6037, lng: -0.1870 },
-                is_online: true,
-                is_active: true,
-                working_days: [
-                    { day: 'Monday', time: '8:00 AM - 6:00 PM' },
-                    { day: 'Tuesday', time: '8:00 AM - 6:00 PM' },
-                    { day: 'Wednesday', time: '8:00 AM - 6:00 PM' },
-                    { day: 'Thursday', time: '8:00 AM - 6:00 PM' },
-                    { day: 'Friday', time: '8:00 AM - 6:00 PM' },
-                    { day: 'Saturday', time: '9:00 AM - 4:00 PM' },
-                    { day: 'Sunday', time: 'Closed' }
-                ]
-            },
-            { 
-                id: 'fallback2', 
-                name: 'Bel-Aqua Ghana', 
-                branch_name: 'Bel-Aqua Tema',
-                location: 'Tema, Ghana', 
-                time: '15 minutes away', 
-                image: 'images/main/ScheduleImage1.png', 
-                coordinates: { lat: 5.6699, lng: -0.0166 },
-                is_online: true,
-                is_active: true,
-                working_days: [
-                    { day: 'Monday', time: '7:00 AM - 7:00 PM' },
-                    { day: 'Tuesday', time: '7:00 AM - 7:00 PM' },
-                    { day: 'Wednesday', time: '7:00 AM - 7:00 PM' },
-                    { day: 'Thursday', time: '7:00 AM - 7:00 PM' },
-                    { day: 'Friday', time: '7:00 AM - 7:00 PM' },
-                    { day: 'Saturday', time: '8:00 AM - 5:00 PM' },
-                    { day: 'Sunday', time: 'Closed' }
-                ]
-            },
-            { 
-                id: 'fallback3', 
-                name: 'Special Ice Water', 
-                branch_name: 'Special Ice Kumasi',
-                location: 'Kumasi, Ghana', 
-                time: '45 minutes away', 
-                image: 'images/main/ScheduleImage1.png', 
-                coordinates: { lat: 6.6885, lng: -1.6244 },
-                is_online: true,
-                is_active: true,
-                working_days: [
-                    { day: 'Monday', time: '9:00 AM - 5:00 PM' },
-                    { day: 'Tuesday', time: '9:00 AM - 5:00 PM' },
-                    { day: 'Wednesday', time: '9:00 AM - 5:00 PM' },
-                    { day: 'Thursday', time: '9:00 AM - 5:00 PM' },
-                    { day: 'Friday', time: '9:00 AM - 5:00 PM' },
-                    { day: 'Saturday', time: '10:00 AM - 3:00 PM' },
-                    { day: 'Sunday', time: 'Closed' }
-                ]
-            }
-        ];
+        return []; // Return empty array to show professional empty state instead of fallback data
     }
 
     // Refresh company data
@@ -320,6 +275,18 @@ class CompanyDataManager {
     getWorkingDaysForCompany(companyId) {
         return this.workingDays.filter(wd => wd.company_id === companyId);
     }
+
+    // Get products for a specific branch
+    getProductsForBranch(branchId) {
+        return this.products.filter(product => 
+            product.branch_id === branchId || product.company_id === branchId
+        );
+    }
+
+    // Get products for a specific company
+    getProductsForCompany(companyId) {
+        return this.products.filter(product => product.company_id === companyId);
+    }
 }
 
 // Create global instance
@@ -335,36 +302,10 @@ try {
             return this.getFallbackData();
         },
         getFallbackData: function() {
-            console.log('🔄 Using fallback company data');
-            return [
-                {
-                    $id: 'fallback-1',
-                    name: 'Phluowise Demo',
-                    company_id: 'demo-company',
-                    email: 'demo@phluowise.com',
-                    branches: [
-                        {
-                            $id: 'branch-1',
-                            branch_id: 'demo-branch-1',
-                            branch_name: 'Main Branch',
-                            location: 'Accra, Ghana',
-                            email: 'main@phluowise.com',
-                            phone_number: '+233500000000',
-                            is_active: true,
-                            is_online: true
-                        }
-                    ],
-                    working_days: [
-                        { day: 'Monday', time: '8:00 AM - 6:00 PM' },
-                        { day: 'Tuesday', time: '8:00 AM - 6:00 PM' },
-                        { day: 'Wednesday', time: '8:00 AM - 6:00 PM' },
-                        { day: 'Thursday', time: '8:00 AM - 6:00 PM' },
-                        { day: 'Friday', time: '8:00 AM - 6:00 PM' }
-                    ]
-                }
-            ];
+            console.log('🔄 Using fallback company data - returning empty array for professional empty state');
+            return []; // Return empty array to show professional empty state instead of fallback data
         }
-    };
+    }
 }
 
 // Export for module usage

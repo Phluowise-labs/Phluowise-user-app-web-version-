@@ -1744,280 +1744,7 @@
 
         <!-- Services List (ServiceList.tsx) -->
         <div id="listView" class="flex flex-col gap-8 px-[25px] mt-[15px] mb-20">
-
-            <!-- Service Card 1 (height: 560px, border-radius: 20px) -->
-            <div class="card-bg w-full rounded-[20px] overflow-hidden shadow-lg relative" style="height: 560px;">
-                <!-- Primary Image (height: 135px) -->
-                <div class="w-full" style="height: 135px;">
-                    <img src="images/main/ScheduleImage1.png" class="w-full h-full object-cover"
-                        alt="Service Banner">
-                </div>
-
-                <!-- Company Logo Overlay (100x89px, top: 90px, left: 35%) -->
-                <div class="absolute border p-2 overflow-hidden flex items-center justify-center"
-                    style="width: 100px; height: 89px; top: 90px; left: 35%; border-radius: 15px; background-color: var(--bg-second); border-color: #40444B;">
-                    <div class="flex-1 w-full h-full rounded-[15px] overflow-hidden">
-                        <img src="images/main/ScheduleImage2.png"
-                            class="w-full h-full object-cover rounded-lg" alt="Company Logo">
-                    </div>
-                </div>
-
-                <!-- Company Name & Location (mt-12) -->
-                <div class="flex flex-col mt-12 px-5">
-                    <h3 class="text-white text-lg font-medium"><a href="schedule.html?branch_id=1"
-                            class="hover:text-blue-400 transition-colors">Voltic Water Company</a><span
-                            class="material-symbols-outlined verified-checkmark">verified</span></h3>
-                    <div class="flex flex-row gap-2">
-                        <span class="text-white text-lg font-medium">Accra, Ghana</span>
-                        <span class="text-[#2C9043] text-lg font-medium">10min away</span>
-                    </div>
-                </div>
-
-                <!-- Products Section -->
-                <p class="px-5 text-white text-lg mt-4 font-medium">Select products to Schedule order</p>
-
-                <!-- Product Scroll (horizontal, gap: 5px, px: 20px) -->
-                <div class="w-full flex justify-center items-center">
-                    <div class="w-full flex flex-row gap-[5px] overflow-x-auto px-5 mt-3 hide-scrollbar">
-                        <!-- Product 1 -->
-                        <div class="flex flex-col items-center gap-3 flex-shrink-0">
-                            <div class="product-item bg-[#292B2F] rounded-[10px]" style="height: 95px; width: 95px;"
-                                onclick="toggleServiceProduct(this, 'Voltic Water Company', 'Sachets water (500ml bag)', 20.00, 'images/products/sachets.jpg', 'sachets')">
-                            </div>
-                            <span class="text-white text-base font-bold">GHS 20.00</span>
-                            <div class="flex flex-row items-center justify-center">
-                                <svg class="w-4 h-4 mt-1" fill="white" viewBox="0 0 24 24">
-                                    <path
-                                        d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                                </svg>
-                                <span class="text-white text-base font-medium">4.5</span>
-                            </div>
-                        </div>
-
-                        <!-- Product 2 -->
-                        <div class="flex flex-col items-center gap-3 flex-shrink-0">
-                            <div class="product-item bg-[#292B2F] rounded-[10px]" style="height: 95px; width: 95px;"
-                                onclick="toggleServiceProduct(this, 'Voltic Water Company', 'Bottle water (750ml pack)', 15.00, 'images/products/bottle.jpg', 'bottle')">
-                            </div>
-                            <span class="text-white text-base font-bold">GHS 15.00</span>
-                            <div class="flex flex-row items-center justify-center">
-                                <svg class="w-4 h-4 mt-1" fill="white" viewBox="0 0 24 24">
-                                    <path
-                                        d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                                </svg>
-                                <span class="text-white text-base font-medium">4.8</span>
-                            </div>
-                        </div>
-
-                        <!-- Product 3 -->
-                        <div class="flex flex-col items-center gap-3 flex-shrink-0">
-                            <div class="product-item bg-[#292B2F] rounded-[10px]" style="height: 95px; width: 95px;"
-                                onclick="toggleServiceProduct(this, 'Voltic Water Company', 'Dispenser bottle (20L)', 25.00, 'images/products/dispenser.jpg', 'dispenser')">
-                            </div>
-                            <span class="text-white text-base font-bold">GHS 25.00</span>
-                            <div class="flex flex-row items-center justify-center">
-                                <svg class="w-4 h-4 mt-1" fill="white" viewBox="0 0 24 24">
-                                    <path
-                                        d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                                </svg>
-                                <span class="text-white text-base font-medium">4.2</span>
-                            </div>
-                        </div>
-
-                        <!-- Product 4 -->
-                        <div class="flex flex-col items-center gap-3 flex-shrink-0">
-                            <div class="product-item bg-[#292B2F] rounded-[10px]" style="height: 95px; width: 95px;"
-                                onclick="toggleServiceProduct(this, 'Voltic Water Company', 'Large bottle (10L)', 30.00, 'images/products/large-bottle.jpg', 'bottle')">
-                            </div>
-                            <span class="text-white text-base font-bold">GHS 30.00</span>
-                            <div class="flex flex-row items-center justify-center">
-                                <svg class="w-4 h-4 mt-1" fill="white" viewBox="0 0 24 24">
-                                    <path
-                                        d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                                </svg>
-                                <span class="text-white text-base font-medium">4.9</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Selected Products Count -->
-                <div id="selectedCount1" class="px-5 mt-3 text-sm text-[#3B74FF] font-medium hidden">
-                    <span id="selectedProductsCount1">0</span> products selected
-                </div>
-
-                <!-- Schedule Button (px-10, mt-6) -->
-                <div class="px-10 mt-6">
-                    <button onclick="scheduleOrder('Voltic Water Company')"
-                        class="h-[46px] w-full rounded-[20px] flex items-center justify-center border shadow-md active:scale-95 transition-transform"
-                        style="background-color: var(--btn-color); border-color: var(--btn-border);">
-                        <span class="text-white text-xl font-semibold capitalize">Schedule Order</span>
-                    </button>
-                </div>
-            </div>
-
-            <!-- Service Card 2 -->
-            <div class="card-bg w-full rounded-[20px] overflow-hidden shadow-lg relative" style="height: 560px;">
-                <div class="w-full" style="height: 135px;">
-                    <img src="images/main/ScheduleImage1.png" class="w-full h-full object-cover"
-                        alt="Service Banner">
-                </div>
-                <div class="absolute border p-2 overflow-hidden flex items-center justify-center"
-                    style="width: 100px; height: 89px; top: 90px; left: 35%; border-radius: 15px; background-color: var(--bg-second); border-color: #40444B;">
-                    <div class="flex-1 w-full h-full rounded-[15px] overflow-hidden">
-                        <img src="images/main/ScheduleImage2.png"
-                            class="w-full h-full object-cover rounded-lg" alt="Company Logo">
-                    </div>
-                </div>
-                <div class="flex flex-col mt-12 px-5">
-                    <h3 class="text-white text-lg font-medium"><a href="schedule.html?branch_id=2"
-                            class="hover:text-blue-400 transition-colors">Bel-Aqua Ghana</a><span
-                            class="material-symbols-outlined verified-checkmark">verified</span></h3>
-                    <div class="flex flex-row gap-2">
-                        <span class="text-white text-lg font-medium">Tema, Ghana</span>
-                        <span class="text-[#2C9043] text-lg font-medium">25min away</span>
-                    </div>
-                </div>
-                <p class="px-5 text-white text-lg mt-4 font-medium">Select products to Schedule order</p>
-                <div class="w-full flex justify-center items-center">
-                    <div class="w-full flex flex-row gap-[5px] overflow-x-auto px-5 mt-3 hide-scrollbar">
-                        <div class="flex flex-col items-center gap-3 flex-shrink-0">
-                            <div class="product-item bg-[#292B2F] rounded-[10px]" style="height: 95px; width: 95px;"
-                                onclick="toggleServiceProduct(this, 'Bel-Aqua Ghana', 'Sachets water (500ml bag)', 18.00, 'images/products/sachets.jpg', 'sachets')">
-                            </div>
-                            <span class="text-white text-base font-bold">GHS 18.00</span>
-                            <div class="flex flex-row items-center justify-center">
-                                <svg class="w-4 h-4 mt-1" fill="white" viewBox="0 0 24 24">
-                                    <path
-                                        d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                                </svg>
-                                <span class="text-white text-base font-medium">4.6</span>
-                            </div>
-                        </div>
-                        <div class="flex flex-col items-center gap-3 flex-shrink-0">
-                            <div class="product-item bg-[#292B2F] rounded-[10px]" style="height: 95px; width: 95px;"
-                                onclick="toggleServiceProduct(this, 'Bel-Aqua Ghana', 'Bottle water (750ml pack)', 22.00, 'images/products/bottle.jpg', 'bottle')">
-                            </div>
-                            <span class="text-white text-base font-bold">GHS 22.00</span>
-                            <div class="flex flex-row items-center justify-center">
-                                <svg class="w-4 h-4 mt-1" fill="white" viewBox="0 0 24 24">
-                                    <path
-                                        d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                                </svg>
-                                <span class="text-white text-base font-medium">4.7</span>
-                            </div>
-                        </div>
-                        <div class="flex flex-col items-center gap-3 flex-shrink-0">
-                            <div class="product-item bg-[#292B2F] rounded-[10px]" style="height: 95px; width: 95px;"
-                                onclick="toggleServiceProduct(this, 'Bel-Aqua Ghana', 'Dispenser bottle (20L)', 28.00, 'images/products/dispenser.jpg', 'dispenser')">
-                            </div>
-                            <span class="text-white text-base font-bold">GHS 28.00</span>
-                            <div class="flex flex-row items-center justify-center">
-                                <svg class="w-4 h-4 mt-1" fill="white" viewBox="0 0 24 24">
-                                    <path
-                                        d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                                </svg>
-                                <span class="text-white text-base font-medium">4.4</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Selected Products Count -->
-                <div id="selectedCount2" class="px-5 mt-3 text-sm text-[#3B74FF] font-medium hidden">
-                    <span id="selectedProductsCount2">0</span> products selected
-                </div>
-
-                <div class="px-10 mt-6">
-                    <button onclick="scheduleOrder('Bel-Aqua Ghana')"
-                        class="h-[46px] w-full rounded-[20px] flex items-center justify-center border shadow-md active:scale-95 transition-transform"
-                        style="background-color: var(--btn-color); border-color: var(--btn-border);">
-                        <span class="text-white text-xl font-semibold capitalize">Schedule Order</span>
-                    </button>
-                </div>
-            </div>
-
-            <!-- Service Card 3 -->
-            <div class="card-bg w-full rounded-[20px] overflow-hidden shadow-lg relative" style="height: 560px;">
-                <div class="w-full" style="height: 135px;">
-                    <img src="images/main/ScheduleImage1.png" class="w-full h-full object-cover"
-                        alt="Service Banner">
-                </div>
-                <div class="absolute border p-2 overflow-hidden flex items-center justify-center"
-                    style="width: 100px; height: 89px; top: 90px; left: 35%; border-radius: 15px; background-color: var(--bg-second); border-color: #40444B;">
-                    <div class="flex-1 w-full h-full rounded-[15px] overflow-hidden">
-                        <img src="images/main/ScheduleImage2.png"
-                            class="w-full h-full object-cover rounded-lg" alt="Company Logo">
-                    </div>
-                </div>
-                <div class="flex flex-col mt-12 px-5">
-                    <h3 class="text-white text-lg font-medium"><a href="schedule.html?branch_id=3"
-                            class="hover:text-blue-400 transition-colors">Special Ice Water</a><span
-                            class="material-symbols-outlined verified-checkmark">verified</span></h3>
-                    <div class="flex flex-row gap-2">
-                        <span class="text-white text-lg font-medium">Kumasi, Ghana</span>
-                        <span class="text-[#2C9043] text-lg font-medium">45min away</span>
-                    </div>
-                </div>
-                <p class="px-5 text-white text-lg mt-4 font-medium">Select products to Schedule order</p>
-                <div class="w-full flex justify-center items-center">
-                    <div class="w-full flex flex-row gap-[5px] overflow-x-auto px-5 mt-3 hide-scrollbar">
-                        <div class="flex flex-col items-center gap-3 flex-shrink-0">
-                            <div class="product-item bg-[#292B2F] rounded-[10px]" style="height: 95px; width: 95px;"
-                                onclick="toggleServiceProduct(this, 'Special Ice Water', 'Sachets water (500ml bag)', 12.00, 'images/products/sachets.jpg', 'sachets')">
-                            </div>
-                            <span class="text-white text-base font-bold">GHS 12.00</span>
-                            <div class="flex flex-row items-center justify-center">
-                                <svg class="w-4 h-4 mt-1" fill="white" viewBox="0 0 24 24">
-                                    <path
-                                        d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                                </svg>
-                                <span class="text-white text-base font-medium">4.3</span>
-                            </div>
-                        </div>
-                        <div class="flex flex-col items-center gap-3 flex-shrink-0">
-                            <div class="product-item bg-[#292B2F] rounded-[10px]" style="height: 95px; width: 95px;"
-                                onclick="toggleServiceProduct(this, 'Special Ice Water', 'Bottle water (750ml pack)', 16.00, 'images/products/bottle.jpg', 'bottle')">
-                            </div>
-                            <span class="text-white text-base font-bold">GHS 16.00</span>
-                            <div class="flex flex-row items-center justify-center">
-                                <svg class="w-4 h-4 mt-1" fill="white" viewBox="0 0 24 24">
-                                    <path
-                                        d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                                </svg>
-                                <span class="text-white text-base font-medium">4.5</span>
-                            </div>
-                        </div>
-                        <div class="flex flex-col items-center gap-3 flex-shrink-0">
-                            <div class="product-item bg-[#292B2F] rounded-[10px]" style="height: 95px; width: 95px;"
-                                onclick="toggleServiceProduct(this, 'Special Ice Water', 'Dispenser bottle (20L)', 24.00, 'images/products/dispenser.jpg', 'dispenser')">
-                            </div>
-                            <span class="text-white text-base font-bold">GHS 24.00</span>
-                            <div class="flex flex-row items-center justify-center">
-                                <svg class="w-4 h-4 mt-1" fill="white" viewBox="0 0 24 24">
-                                    <path
-                                        d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                                </svg>
-                                <span class="text-white text-base font-medium">4.1</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Selected Products Count -->
-                <div id="selectedCount3" class="px-5 mt-3 text-sm text-[#3B74FF] font-medium hidden">
-                    <span id="selectedProductsCount3">0</span> products selected
-                </div>
-
-                <div class="px-10 mt-6">
-                    <button onclick="scheduleOrder('Special Ice Water')"
-                        class="h-[46px] w-full rounded-[20px] flex items-center justify-center border shadow-md active:scale-95 transition-transform"
-                        style="background-color: var(--btn-color); border-color: var(--btn-border);">
-                        <span class="text-white text-xl font-semibold capitalize">Schedule Order</span>
-                    </button>
-                </div>
-            </div>
-
+            <!-- Service cards will be dynamically loaded here from database -->
         </div>
 
         <!-- Swipe View (hidden by default) -->
@@ -2667,80 +2394,208 @@
         let selectedSavedRecipient = null;
         let selectedDate = '';
         let selectedTime = '';
-
-        const services = [
-            {
-                id: 1,
-                name: 'Voltic Water Company',
-                location: 'Accra, Ghana',
-                time: '10min away',
-                coordinates: { lat: 5.6037, lng: -0.1870 },
-                openingHours: {
-                    monday: { open: '08:00', close: '18:00' },
-                    tuesday: { open: '08:00', close: '18:00' },
-                    wednesday: { open: '08:00', close: '18:00' },
-                    thursday: { open: '08:00', close: '18:00' },
-                    friday: { open: '08:00', close: '18:00' },
-                    saturday: { open: '09:00', close: '15:00' },
-                    sunday: { open: 'closed' }
-                },
-                products: [
-                    { id: 1, price: 20.00, rating: '4.5', name: 'Sachets water (500ml bag)', actualPrice: 20.00, image: 'images/products/sachets.jpg', type: 'sachets', minQuantity: 5 },
-                    { id: 2, price: 15.00, rating: '4.8', name: 'Bottle water (750ml pack)', actualPrice: 15.00, image: 'images/products/bottle.jpg', type: 'bottle', minQuantity: 3 },
-                    { id: 3, price: 25.00, rating: '4.2', name: 'Dispenser bottle (20L)', actualPrice: 25.00, image: 'images/products/dispenser.jpg', type: 'dispenser', minQuantity: 1 },
-                    { id: 4, price: 30.00, rating: '4.9', name: 'Large bottle (10L)', actualPrice: 30.00, image: 'images/products/large-bottle.jpg', type: 'bottle', minQuantity: 2 }
-                ]
-            },
-            {
-                id: 2,
-                name: 'Bel-Aqua Ghana',
-                location: 'Tema, Ghana',
-                time: '25min away',
-                coordinates: { lat: 5.6699, lng: -0.0166 },
-                openingHours: {
-                    monday: { open: '07:30', close: '19:00' },
-                    tuesday: { open: '07:30', close: '19:00' },
-                    wednesday: { open: '07:30', close: '19:00' },
-                    thursday: { open: '07:30', close: '19:00' },
-                    friday: { open: '07:30', close: '19:00' },
-                    saturday: { open: '08:00', close: '16:00' },
-                    sunday: { open: 'closed' }
-                },
-                products: [
-                    { id: 5, price: 18.00, rating: '4.6', name: 'Sachets water (500ml bag)', actualPrice: 18.00, image: 'images/products/sachets.jpg', type: 'sachets', minQuantity: 10 },
-                    { id: 6, price: 22.00, rating: '4.7', name: 'Bottle water (750ml pack)', actualPrice: 22.00, image: 'images/products/bottle.jpg', type: 'bottle', minQuantity: 4 },
-                    { id: 7, price: 28.00, rating: '4.4', name: 'Dispenser bottle (20L)', actualPrice: 28.00, image: 'images/products/dispenser.jpg', type: 'dispenser', minQuantity: 1 }
-                ]
-            },
-            {
-                id: 3,
-                name: 'Special Ice Water',
-                location: 'Kumasi, Ghana',
-                time: '45min away',
-                coordinates: { lat: 6.6885, lng: -1.6244 },
-                openingHours: {
-                    monday: { open: '09:00', close: '17:30' },
-                    tuesday: { open: '09:00', close: '17:30' },
-                    wednesday: { open: '09:00', close: '17:30' },
-                    thursday: { open: '09:00', close: '17:30' },
-                    friday: { open: '09:00', close: '17:30' },
-                    saturday: { open: '10:00', close: '14:00' },
-                    sunday: { open: 'closed' }
-                },
-                products: [
-                    { id: 8, price: 12.00, rating: '4.3', name: 'Sachets water (500ml bag)', actualPrice: 12.00, image: 'images/products/sachets.jpg', type: 'sachets', minQuantity: 8 },
-                    { id: 9, price: 16.00, rating: '4.5', name: 'Bottle water (750ml pack)', actualPrice: 16.00, image: 'images/products/bottle.jpg', type: 'bottle', minQuantity: 3 },
-                    { id: 10, price: 24.00, rating: '4.1', name: 'Dispenser bottle (20L)', actualPrice: 24.00, image: 'images/products/dispenser.jpg', type: 'dispenser', minQuantity: 1 }
-                ]
-            }
-        ];
+        let services = []; // Will be loaded from database
+        let servicesDataLoaded = false;
 
         // Track service product selections separately
-        let serviceProducts = {
-            'Voltic Water Company': [],
-            'Bel-Aqua Ghana': [],
-            'Special Ice Water': []
-        };
+        let serviceProducts = {};
+
+        // Load service data from database
+        async function loadServiceData() {
+            try {
+                // Check if user is authenticated
+                if (!window.account) {
+                    console.log('⏳ Waiting for Appwrite account to initialize...');
+                    setTimeout(() => loadServiceData(), 1000);
+                    return;
+                }
+
+                // Wait for companyDataManager to be available
+                if (!window.companyDataManager) {
+                    console.log('⏳ Waiting for CompanyDataManager to initialize...');
+                    setTimeout(() => loadServiceData(), 500);
+                    return;
+                }
+
+                console.log('🔄 Loading service data from database...');
+                
+                services = await window.companyDataManager.fetchCompanyData();
+                servicesDataLoaded = true;
+                
+                // Initialize serviceProducts object for each company
+                services.forEach(service => {
+                    if (!serviceProducts[service.name]) {
+                        serviceProducts[service.name] = [];
+                    }
+                });
+                
+                console.log(`✅ Loaded ${services.length} services from database`);
+                renderServices();
+                
+            } catch (error) {
+                console.error('❌ Error loading service data:', error);
+                // Use fallback data if database fails
+                services = window.companyDataManager.getFallbackData();
+                servicesDataLoaded = true;
+                
+                // Initialize serviceProducts object for each company
+                services.forEach(service => {
+                    if (!serviceProducts[service.name]) {
+                        serviceProducts[service.name] = [];
+                    }
+                });
+                
+                renderServices();
+            }
+        }
+
+        // Render service cards dynamically
+        function renderServices() {
+            const listView = document.getElementById('listView');
+            listView.innerHTML = '';
+            
+            if (services.length === 0) {
+                // Show professional empty state when no companies are available
+                listView.innerHTML = `
+                    <div class="flex flex-col items-center justify-center h-full text-white text-center p-8" style="min-height: 400px;">
+                        <div class="mb-6">
+                            <div class="w-24 h-24 bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <svg class="w-12 h-12 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                                </svg>
+                            </div>
+                            <h3 class="text-2xl font-semibold mb-2">No Services Available</h3>
+                            <p class="text-gray-400 text-lg mb-6">We couldn't find any water services in your area.</p>
+                            <div class="space-y-3">
+                                <p class="text-gray-500 text-sm">This could be because:</p>
+                                <ul class="text-gray-500 text-sm space-y-1 max-w-md mx-auto">
+                                    <li>• No companies have registered in your location yet</li>
+                                    <li>• Services are currently unavailable in your area</li>
+                                    <li>• There might be a connection issue</li>
+                                </ul>
+                            </div>
+                            <button onclick="location.reload()" class="mt-6 px-6 py-3 bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-lg hover:bg-gray-700/50 transition-all duration-300 flex items-center gap-2 mx-auto">
+                                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                </svg>
+                                <span class="text-gray-300">Refresh Services</span>
+                            </button>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+            
+            services.forEach((service, index) => {
+                const serviceCard = createServiceCard(service, index);
+                listView.appendChild(serviceCard);
+            });
+        }
+
+        // Create a service card element
+        function createServiceCard(service, index) {
+            const card = document.createElement('div');
+            card.className = 'card-bg w-full rounded-[20px] overflow-hidden shadow-lg relative';
+            card.style.height = '560px';
+            
+            // Use header_image for banner, profile_image for logo
+            const bannerImage = service.header_image;
+            const profileImage = service.profile_image;
+            
+            // Create products HTML
+            const productsHTML = (service.products || []).map(product => `
+                <div class="flex flex-col items-center gap-3 flex-shrink-0">
+                    <div class="product-item bg-[#292B2F] rounded-[10px] flex items-center justify-center" style="height: 95px; width: 95px; ${product.image ? `background-image: url('${product.image}'); background-size: cover; background-position: center;` : ''}"
+                        onclick="toggleServiceProduct(this, '${service.name}', '${product.name}', ${parseFloat(product.price) || 0}, '${product.image || ''}', '${product.type || 'product'}')">
+                        ${product.image ? '' : `
+                            <div class="text-center">
+                                <svg class="w-8 h-8 mx-auto mb-1 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                                </svg>
+                                <span class="text-gray-500 text-xs">No Image</span>
+                            </div>
+                        `}
+                    </div>
+                    <span class="text-white text-base font-bold">GHS ${(parseFloat(product.price) || 0).toFixed(2)}</span>
+                    <div class="flex flex-row items-center justify-center">
+                        <svg class="w-4 h-4 mt-1" fill="white" viewBox="0 0 24 24">
+                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                        </svg>
+                        <span class="text-white text-base font-medium">${product.rating || '4.5'}</span>
+                    </div>
+                </div>
+            `).join('');
+            
+            card.innerHTML = `
+                <!-- Primary Image (height: 135px) -->
+                <div class="w-full" style="height: 135px;">
+                    ${bannerImage ? 
+                        `<img src="${bannerImage}" class="w-full h-full object-cover" alt="Service Banner">` :
+                        `<div class="w-full h-full bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 flex items-center justify-center">
+                            <div class="text-center">
+                                <svg class="w-12 h-12 mx-auto mb-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                </svg>
+                                <span class="text-gray-500 text-sm">No Banner Image</span>
+                            </div>
+                        </div>`
+                    }
+                </div>
+
+                <!-- Company Logo Overlay (100x89px, top: 90px, left: 35%) -->
+                <div class="absolute border p-2 overflow-hidden flex items-center justify-center"
+                    style="width: 100px; height: 89px; top: 90px; left: 35%; border-radius: 15px; background-color: var(--bg-second); border-color: #40444B;">
+                    ${profileImage ? 
+                        `<img src="${profileImage}" class="w-full h-full object-cover" alt="Company Logo">` :
+                        `<div class="w-full h-full bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 flex items-center justify-center">
+                            <svg class="w-8 h-8 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                            </svg>
+                        </div>`
+                    }
+                </div>
+
+                <!-- Company Name & Location (mt-12) -->
+                <div class="flex flex-col mt-12 px-5">
+                    <h3 class="text-white text-lg font-medium">
+                        <a href="schedule.html?branch_id=${service.branch_id}" class="hover:text-blue-400 transition-colors">${service.name}</a>
+                        <span class="material-symbols-outlined verified-checkmark">verified</span>
+                    </h3>
+                    <div class="flex flex-row gap-2">
+                        <span class="text-white text-lg font-medium">${service.location}</span>
+                        <span class="text-[#2C9043] text-lg font-medium">${service.time}</span>
+                    </div>
+                </div>
+
+                <!-- Products Section -->
+                <p class="px-5 text-white text-lg mt-4 font-medium">Select products to Schedule order</p>
+
+                <!-- Product Scroll (horizontal, gap: 5px, px: 20px) -->
+                <div class="w-full flex justify-center items-center">
+                    <div class="w-full flex flex-row gap-[5px] overflow-x-auto px-5 mt-3 hide-scrollbar">
+                        ${productsHTML}
+                    </div>
+                </div>
+
+                <!-- Selected Products Counter -->
+                <div id="selectedCount${index + 1}" class="hidden px-5 mt-4">
+                    <span class="text-blue-400 text-sm font-medium">
+                        <span id="selectedProductsCount${index + 1}"><span class="badge">0</span></span> products selected
+                    </span>
+                </div>
+
+                <!-- Schedule Order Button -->
+                <div class="px-5 mt-4">
+                    <button onclick="openScheduleFlow('${service.name}')"
+                        class="w-full py-4 rounded-lg backdrop-blur-xl transition-all duration-300 shadow-lg"
+                        style="background-color: var(--btn-color); border-color: var(--btn-border);">
+                        <span class="text-white text-xl font-semibold capitalize">Schedule Order</span>
+                    </button>
+                </div>
+            `;
+            
+            return card;
+        }
 
         // Handle search input
         function handleSearch() {
@@ -2969,11 +2824,28 @@
 
             container.innerHTML = `
                 <div class="w-full" style="height: 135px;">
-                    <img src="images/main/ScheduleImage1.png" class="w-full h-full object-cover" alt="Service Banner">
+                    ${service.header_image ? 
+                        `<img src="${service.header_image}" class="w-full h-full object-cover" alt="Service Banner">` :
+                        `<div class="w-full h-full bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 flex items-center justify-center">
+                            <div class="text-center">
+                                <svg class="w-12 h-12 mx-auto mb-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                </svg>
+                                <span class="text-gray-500 text-sm">No Banner Image</span>
+                            </div>
+                        </div>`
+                    }
                 </div>
                 <div class="absolute border p-2 overflow-hidden flex items-center justify-center"
                      style="width: 100px; height: 89px; top: 90px; left: 35%; border-radius: 15px; background-color: var(--bg-second); border-color: #40444B;">
-                    <img src="images/main/ScheduleImage2.png" class="w-full h-full object-cover rounded-lg" alt="Company Logo">
+                    ${service.profile_image ? 
+                        `<img src="${service.profile_image}" class="w-full h-full object-cover rounded-lg" alt="Company Logo">` :
+                        `<div class="w-full h-full bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 flex items-center justify-center">
+                            <svg class="w-8 h-8 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                            </svg>
+                        </div>`
+                    }
                 </div>
                 <div class="flex flex-col mt-12 px-5">
                     <h3 class="text-white text-lg font-medium">${service.name}<span class="material-symbols-outlined verified-checkmark">verified</span></h3>
@@ -2992,12 +2864,20 @@
 
                 return `
                                 <div class="flex flex-col items-center gap-3 flex-shrink-0">
-                                    <div class="swipe-product-item rounded-[10px] ${isSelected ? 'selected' : ''}" 
-                                         style="height: 95px; width: 95px;"
-                                         onclick="toggleSwipeProduct(this, '${service.name}', '${p.name}', ${p.price}, '${p.image}', '${p.type}')">
+                                    <div class="swipe-product-item rounded-[10px] flex items-center justify-center ${isSelected ? 'selected' : ''}" 
+                                         style="height: 95px; width: 95px; ${p.image ? `background-image: url('${p.image}'); background-size: cover; background-position: center;` : ''}"
+                                         onclick="toggleSwipeProduct(this, '${service.name}', '${p.name}', ${parseFloat(p.price) || 0}, '${p.image}', '${p.type}')">
                                         ${isSelected ? `<div class="product-item-quantity">${quantity}</div>` : ''}
+                                        ${p.image ? '' : `
+                                            <div class="text-center">
+                                                <svg class="w-8 h-8 mx-auto mb-1 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                                                </svg>
+                                                <span class="text-gray-500 text-xs">No Image</span>
+                                            </div>
+                                        `}
                                     </div>
-                                    <span class="text-white text-base font-bold">GHS ${p.price.toFixed(2)}</span>
+                                    <span class="text-white text-base font-bold">GHS ${(parseFloat(p.price) || 0).toFixed(2)}</span>
                                     <div class="flex flex-row items-center justify-center">
                                         <svg class="w-4 h-4 mt-1" fill="white" viewBox="0 0 24 24">
                                             <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
@@ -3040,6 +2920,25 @@
         // Schedule order - Open bottom sheet
         function scheduleOrder(companyName) {
             // console.log('🔍 scheduleOrder() called for:', companyName);
+            selectedCompany = companyName;
+
+            // Get selected products for this company
+            selectedProducts = [...serviceProducts[companyName]];
+
+            // console.log('📦 Selected products:', selectedProducts);
+
+            if (selectedProducts.length === 0) {
+                showError('Please select at least one product first');
+                return;
+            }
+
+            // console.log('✅ Products selected, starting schedule flow...');
+            startScheduleFlow();
+        }
+
+        // Open schedule flow - same as scheduleOrder
+        function openScheduleFlow(companyName) {
+            // console.log('🔍 openScheduleFlow() called for:', companyName);
             selectedCompany = companyName;
 
             // Get selected products for this company
@@ -3960,7 +3859,10 @@
             // Check if company is open
             if (!isCompanyOpen(selectedCompany, selectedDate, selectedTime)) {
                 const hoursInfo = getCompanyHoursInfo(selectedCompany, selectedDate);
-                showError(hoursInfo.message || `${selectedCompany} is closed at the selected time. Please choose a different time.`);
+                const errorMessage = hoursInfo && hoursInfo.message 
+                    ? hoursInfo.message 
+                    : `${selectedCompany} is closed at the selected time. Please choose a different time.`;
+                showError(errorMessage);
                 return false;
             }
 
@@ -4437,11 +4339,6 @@
             const savedTheme = localStorage.getItem('theme') || 'dark';
             document.body.classList.remove('dark-theme', 'gray-theme', 'light-theme');
             document.body.classList.add(savedTheme + '-theme');
-            setGreeting();
-            getUserLocation();
-
-            // Set default recipient type
-            selectRecipientType('you');
 
             // Set default terms option
             selectTermsOption('schedule');
@@ -4449,6 +4346,9 @@
             // Initialize search functionality
             const searchInput = document.getElementById('searchInput');
             searchInput.addEventListener('input', handleSearch);
+
+            // Load service data from database
+            loadServiceData();
 
             // Add event listener to save user address when updated
             const addressField = document.getElementById('recipientAddress');
@@ -5015,6 +4915,7 @@
 <!-- Appwrite SDK and Config -->
 <script src="https://cdn.jsdelivr.net/npm/appwrite@13.0.1"></script>
 <script src="js/appwriteConfig.js"></script>
+<script src="js/companyData.js"></script>
 <script src="js/notifications.js"></script>
 </body>
 

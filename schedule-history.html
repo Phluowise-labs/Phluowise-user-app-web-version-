@@ -1213,7 +1213,7 @@
                 }
 
                 // Determine the appropriate image based on product type
-                let productImage = 'images/main/ScheduleImage1.png';
+                let productImage = null;
                 if (order.product && (order.product.toLowerCase().includes('dispenser') || order.product.toLowerCase().includes('bottle'))) {
                     if (order.product.toLowerCase().includes('20l') || order.bottleSize === '20L' || order.isLargeBottle) {
                         productImage = 'images/products/large-bottle.jpg';
@@ -1224,9 +1224,16 @@
 
                 card.innerHTML = `
                     <div class="flex flex-row w-full items-center gap-2">
-                        <!-- Image (width: 22%, height: 89, rounded: 10, bg: #808080) -->
-                        <div class="rounded-[10px] bg-[#808080] overflow-hidden" style="width: 22%; height: 89px;">
-                            <img src="${productImage}" class="w-full h-full object-cover">
+                        <!-- Product Image Container -->
+                        <div class="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0">
+                            ${productImage ? 
+                                `<img src="${productImage}" class="w-full h-full object-cover" alt="Product">` :
+                                `<div class="w-full h-full bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 flex items-center justify-center">
+                                    <svg class="w-8 h-8 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                                    </svg>
+                                </div>`
+                            }
                         </div>
                         
                         <!-- Info Section (width: 44%) -->
@@ -1636,7 +1643,7 @@
             const detailsArea = document.getElementById('orderDetailsContentArea');
 
             // Determine the appropriate image based on product type
-            let productImage = 'images/main/ScheduleImage1.png';
+            let productImage = null;
             if (currentOrderForDetails.product && (currentOrderForDetails.product.toLowerCase().includes('dispenser') || currentOrderForDetails.product.toLowerCase().includes('bottle'))) {
                 if (currentOrderForDetails.product.toLowerCase().includes('20l') || currentOrderForDetails.bottleSize === '20L' || currentOrderForDetails.isLargeBottle) {
                     productImage = 'images/products/large-bottle.jpg';
@@ -1653,7 +1660,14 @@
                         <h3 class="text-white text-lg font-bold mb-3">Product</h3>
                         <div class="flex items-center space-x-4">
                             <div class="rounded-[10px] bg-[#808080] overflow-hidden flex-shrink-0" style="width: 80px; height: 80px;">
-                                <img src="${productImage}" class="w-full h-full object-cover">
+                                ${productImage ? 
+                                    `<img src="${productImage}" class="w-full h-full object-cover">` :
+                                    `<div class="w-full h-full bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 flex items-center justify-center">
+                                        <svg class="w-8 h-8 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                                        </svg>
+                                    </div>`
+                                }
                             </div>
                             <div class="flex-1">
                                 <h4 class="text-white text-lg font-semibold">${currentOrderForDetails.product || 'N/A'}</h4>
