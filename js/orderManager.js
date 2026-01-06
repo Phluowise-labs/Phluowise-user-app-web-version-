@@ -31,14 +31,36 @@ class OrderManager {
             console.log('🔍 OrderManager.createOrder - orderData.total:', orderData.total);
             console.log('🔍 OrderManager.createOrder - orderData:', orderData);
             
+            // Generate unique ID with fallback method (max 20 chars)
+            let uniqueOrderId;
+            try {
+                uniqueOrderId = this.ID.unique();
+                console.log('🔍 Generated unique orderId via Appwrite:', uniqueOrderId);
+                
+                // If ID.unique() returns "unique()", use fallback method
+                if (uniqueOrderId === 'unique()') {
+                    throw new Error('Appwrite ID.unique() not working properly');
+                }
+            } catch (error) {
+                console.log('🔍 Using fallback ID generation method');
+                // Generate shorter ID: timestamp (last 8 digits) + random (6 chars) = max 14 chars
+                const timestamp = Date.now().toString().slice(-8);
+                const random = Math.random().toString(36).substr(2, 6);
+                uniqueOrderId = timestamp + random;
+                console.log('🔍 Generated fallback orderId:', uniqueOrderId);
+                console.log('🔍 Fallback orderId length:', uniqueOrderId.length);
+            }
+            
             const order = {
+                // Required orderId field - use the generated ID
+                orderId: uniqueOrderId,
+                
                 // Required customer field
                 customer_id: orderData.customer_id || orderData.buyerId,
                 
                 // Order details
                 buyerId: orderData.customer_id || orderData.buyerId,
                 branchId: orderData.branchId,
-                orderId: this.ID.unique(),
                 deliveryTime: orderData.deliveryTime,
                 deliveryDate: orderData.deliveryDate,
                 orderComment: orderData.orderComment || '',
@@ -52,11 +74,12 @@ class OrderManager {
             };
             
             console.log('🔍 Final order object total:', order.total);
+            console.log('🔍 Final order object with orderId:', order.orderId);
 
             const result = await this.databases.createDocument(
                 this.config.DATABASE_ID,
                 this.config.ORDERS_TABLE,
-                this.ID.unique(),
+                uniqueOrderId,
                 order
             );
 
@@ -116,25 +139,51 @@ class OrderManager {
             const createdItems = [];
             
             for (const item of items) {
+                console.log('🔍 Processing item for orderItem:', item);
+                console.log('🔍 Item type:', item.type);
+                console.log('🔍 Item productType:', item.productType);
+                
+                // Generate unique ID using timestamp and random number as fallback (max 20 chars)
+                let uniqueOrderItemId;
+                try {
+                    uniqueOrderItemId = this.ID.unique();
+                    console.log('🔍 Generated unique orderItemId via Appwrite:', uniqueOrderItemId);
+                    
+                    // If ID.unique() returns "unique()", use fallback method
+                    if (uniqueOrderItemId === 'unique()') {
+                        throw new Error('Appwrite ID.unique() not working properly');
+                    }
+                } catch (error) {
+                    console.log('🔍 Using fallback ID generation method');
+                    // Generate shorter ID: timestamp (last 8 digits) + random (6 chars) = max 14 chars
+                    const timestamp = Date.now().toString().slice(-8);
+                    const random = Math.random().toString(36).substr(2, 6);
+                    uniqueOrderItemId = timestamp + random;
+                    console.log('🔍 Generated fallback orderItemId:', uniqueOrderItemId);
+                    console.log('🔍 Fallback orderItemId length:', uniqueOrderItemId.length);
+                }
+
                 const orderItem = {
-                    orderItemId: this.ID.unique(),
+                    orderItemId: uniqueOrderItemId,
                     orderId: orderId,
                     branchId: orderData.branchId || item.branchId,
                     productId: item.productId || item.id,
                     productName: item.name || item.productName,
                     productImage: item.image || item.productImage || '',
-                    productType: item.type || item.productType || '',
+                    productType: item.type || item.productType || 'default',
                     productPrice: Number(item.price || item.productPrice || 0),
                     productQty: Number(item.quantity || 1),
                     returnStatus: 'none',
                     returnQty: 0,
                     returnComment: ''
                 };
+                
+                console.log('🔍 Final orderItem productType:', orderItem.productType);
 
                 const result = await this.databases.createDocument(
                     this.config.DATABASE_ID,
                     this.config.ORDER_ITEMS_TABLE,
-                    this.ID.unique(),
+                    uniqueOrderItemId,
                     orderItem
                 );
 
@@ -301,6 +350,173 @@ class OrderManager {
         }
 
         return { valid: true, message: `Working day confirmed: ${dayOfWeek}` };
+    }
+
+    // Get saved recipients for a user
+    async getSavedRecipients(userId) {
+        try {
+            console.log('🔍 Fetching saved recipients for user:', userId);
+            
+            // Get favorite recipients (saved with order_id = favorite_<userId>)
+            const favoriteResult = await this.databases.listDocuments(
+                this.config.DATABASE_ID,
+                this.config.PURCHASE_RECIPIENT_TABLE,
+                [this.Query.equal('order_id', `favorite_${userId}`)]
+            );
+            
+            console.log('🔍 Found favorite recipients:', favoriteResult.documents.length);
+            
+            // Transform favorite recipients
+            const favoriteRecipients = favoriteResult.documents.map(doc => ({
+                id: doc.$id,
+                name: doc.recipient_name,
+                phone: doc.recipient_phone,
+                email: doc.recipient_email,
+                address: doc.recipient_address,
+                type: doc.recipient_type,
+                businessName: doc.business_name,
+                businessType: doc.business_type,
+                createdAt: doc.$createdAt,
+                isFavorite: true
+            }));
+            
+            // Also get recipients from previous orders
+            try {
+                const ordersResult = await this.databases.listDocuments(
+                    this.config.DATABASE_ID,
+                    this.config.ORDERS_TABLE,
+                    [this.Query.equal('customer_id', userId)]
+                );
+                
+                console.log('🔍 Found orders:', ordersResult.documents.length);
+                
+                if (ordersResult.documents.length > 0) {
+                    // Get all unique recipient info from these orders
+                    const recipientPromises = ordersResult.documents.map(async (order) => {
+                        try {
+                            const recipientResult = await this.databases.listDocuments(
+                                this.config.DATABASE_ID,
+                                this.config.PURCHASE_RECIPIENT_TABLE,
+                                [this.Query.equal('order_id', order.$id)]
+                            );
+                            
+                            if (recipientResult.documents.length > 0) {
+                                const recipient = recipientResult.documents[0];
+                                return {
+                                    id: recipient.$id,
+                                    name: recipient.recipient_name,
+                                    phone: recipient.recipient_phone,
+                                    email: recipient.recipient_email,
+                                    address: recipient.recipient_address,
+                                    type: recipient.recipient_type,
+                                    businessName: recipient.business_name,
+                                    businessType: recipient.business_type,
+                                    createdAt: recipient.$createdAt,
+                                    orderId: order.$id,
+                                    isFavorite: false
+                                };
+                            }
+                            return null;
+                        } catch (error) {
+                            console.error('❌ Error fetching recipient for order:', order.$id, error);
+                            return null;
+                        }
+                    });
+                    
+                    const orderRecipients = await Promise.all(recipientPromises);
+                    const filteredOrderRecipients = orderRecipients.filter(r => r !== null && r.name);
+                    
+                    // Remove duplicates (same name, phone, email)
+                    const uniqueOrderRecipients = filteredOrderRecipients.reduce((acc, recipient) => {
+                        const key = `${recipient.name}-${recipient.phone}-${recipient.email}`;
+                        if (!acc.has(key)) {
+                            acc.set(key, recipient);
+                        }
+                        return acc;
+                    }, new Map());
+                    
+                    // Combine favorites and order recipients
+                    const allRecipients = [...favoriteRecipients, ...Array.from(uniqueOrderRecipients.values())];
+                    
+                    // Final deduplication
+                    const finalRecipients = allRecipients.reduce((acc, recipient) => {
+                        const key = `${recipient.name}-${recipient.phone}-${recipient.email}`;
+                        if (!acc.has(key)) {
+                            acc.set(key, recipient);
+                        }
+                        return acc;
+                    }, new Map());
+                    
+                    console.log('🔍 Final recipients found:', Array.from(finalRecipients.values()));
+                    return Array.from(finalRecipients.values());
+                }
+            } catch (orderError) {
+                console.error('❌ Error fetching order recipients:', orderError);
+                // Return just favorites if order fetch fails
+                return favoriteRecipients;
+            }
+            
+            return favoriteRecipients;
+        } catch (error) {
+            console.error('❌ Error getting saved recipients:', error);
+            return [];
+        }
+    }
+
+    // Save recipient to database as favorite
+    async saveRecipient(userId, recipientData) {
+        try {
+            console.log('🔍 Saving recipient for user:', userId);
+            console.log('🔍 Recipient data:', recipientData);
+            
+            // Create a favorite recipient entry (not tied to an order)
+            const document = {
+                // Use order_id field to store the user ID for favorite recipients
+                order_id: `favorite_${userId}`,
+                purchase_recipient_type: recipientData.type,
+                recipient_name: recipientData.name,
+                recipient_phone: recipientData.phone,
+                recipient_email: recipientData.email,
+                recipient_address: recipientData.address,
+                recipient_type: recipientData.type,
+                business_name: recipientData.businessName || '',
+                business_type: recipientData.businessType || '',
+                self_pickup: recipientData.type === 'you',
+                self_delivery_address: recipientData.type === 'you' ? recipientData.address : ''
+            };
+            
+            const result = await this.databases.createDocument(
+                this.config.DATABASE_ID,
+                this.config.PURCHASE_RECIPIENT_TABLE,
+                this.ID.unique(),
+                document
+            );
+            
+            console.log('✅ Recipient saved:', result.$id);
+            return result;
+        } catch (error) {
+            console.error('❌ Error saving recipient:', error);
+            throw error;
+        }
+    }
+
+    // Delete saved recipient
+    async deleteRecipient(recipientId) {
+        try {
+            console.log('🔍 Deleting recipient:', recipientId);
+            
+            await this.databases.deleteDocument(
+                this.config.DATABASE_ID,
+                this.config.PURCHASE_RECIPIENT_TABLE,
+                recipientId
+            );
+            
+            console.log('✅ Recipient deleted');
+            return true;
+        } catch (error) {
+            console.error('❌ Error deleting recipient:', error);
+            throw error;
+        }
     }
 
     // Complete order creation with validation

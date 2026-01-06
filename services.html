@@ -981,6 +981,17 @@
             object-fit: cover;
         }
 
+        .selected-product-image-placeholder {
+            width: 60px;
+            height: 60px;
+            border-radius: 8px;
+            background-color: #40444B;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
         .selected-product-details {
             flex: 1;
         }
@@ -1831,7 +1842,7 @@
 
     <!-- Schedule Flow Bottom Sheet (Improved UI) -->
     <div id="scheduleFlowSheet"
-        class="bottom-sheet-container fixed inset-0 z-50 flex items-end justify-center pointer-events-none">
+        class="bottom-sheet-container fixed inset-0 z-[10002] flex items-end justify-center pointer-events-none">
 
         <!-- Content (Improved Design) -->
         <div id="scheduleFlowContent" class="bottom-sheet-content w-full max-w-[400px] flex flex-col relative"
@@ -2023,6 +2034,12 @@
                     <h3 class="section-header">Select Date & Time</h3>
                     <p class="section-subheader">Choose when you want your order delivered</p>
 
+                    <!-- Company Working Hours Display -->
+                    <div id="workingHoursDisplay" class="info-card mb-4" style="display: none;">
+                        <div class="info-title">Working Hours</div>
+                        <div id="workingHoursText" class="info-text"></div>
+                    </div>
+
                     <div class="form-container space-y-6">
                         <div class="datetime-row">
                             <div class="datetime-input">
@@ -2033,17 +2050,6 @@
                                 <label class="form-label">Delivery Time</label>
                                 <select id="deliveryTime" class="form-input">
                                     <option value="">Select Time</option>
-                                    <option value="08:00">8:00 AM</option>
-                                    <option value="09:00">9:00 AM</option>
-                                    <option value="10:00">10:00 AM</option>
-                                    <option value="11:00">11:00 AM</option>
-                                    <option value="12:00">12:00 PM</option>
-                                    <option value="13:00">1:00 PM</option>
-                                    <option value="14:00">2:00 PM</option>
-                                    <option value="15:00">3:00 PM</option>
-                                    <option value="16:00">4:00 PM</option>
-                                    <option value="17:00">5:00 PM</option>
-                                    <option value="18:00">6:00 PM</option>
                                 </select>
                             </div>
                         </div>
@@ -2426,24 +2432,31 @@
         let serviceProducts = {};
 
         // Load service data from database
+        let loadRetryCount = 0;
+        const MAX_RETRIES = 10;
+        
         async function loadServiceData() {
             try {
                 // Check if user is authenticated
-                if (!window.account) {
-                    console.log('⏳ Waiting for Appwrite account to initialize...');
+                if (!window.account && loadRetryCount < MAX_RETRIES) {
+                    loadRetryCount++;
                     setTimeout(() => loadServiceData(), 1000);
                     return;
                 }
 
                 // Wait for companyDataManager to be available
-                if (!window.companyDataManager) {
-                    console.log('⏳ Waiting for CompanyDataManager to initialize...');
+                if (!window.companyDataManager && loadRetryCount < MAX_RETRIES) {
+                    loadRetryCount++;
                     setTimeout(() => loadServiceData(), 500);
                     return;
                 }
 
-                console.log('🔄 Loading service data from database...');
-                
+                // Stop retrying if max retries reached
+                if (loadRetryCount >= MAX_RETRIES) {
+                    console.error('❌ Max retries reached for service data loading');
+                    return;
+                }
+
                 services = await window.companyDataManager.fetchCompanyData();
                 servicesDataLoaded = true;
                 
@@ -2454,7 +2467,6 @@
                     }
                 });
                 
-                console.log(`✅ Loaded ${services.length} services from database`);
                 renderServices();
                 
             } catch (error) {
@@ -2666,7 +2678,6 @@
 
         // Toggle product selection in service card
         function toggleServiceProduct(element, companyName, productName, price, image, type) {
-            // console.log('Toggling product:', { companyName, productName, price, type });
 
             // Find the original product to get minQuantity
             const originalProduct = services.find(service => service.name === companyName)
@@ -2709,13 +2720,10 @@
 
             // Update selected count display
             updateServiceProductCount(companyName);
-
-            // console.log('✅ Service products for', companyName, ':', serviceProducts[companyName]);
         }
 
         // Toggle product selection in swipe view
         function toggleSwipeProduct(element, companyName, productName, price, image, type) {
-            // console.log('Toggling swipe product:', { companyName, productName, price, type });
 
             // Find original product to get minQuantity
             const originalProduct = services.find(service => service.name === companyName)
@@ -2758,8 +2766,6 @@
 
             // Update selected count display
             updateServiceProductCount(companyName);
-
-            // console.log('✅ Swipe products for', companyName, ':', serviceProducts[companyName]);
         }
 
         // Update service product count display
@@ -2811,7 +2817,7 @@
                         };
                     },
                     (error) => {
-                        // console.log('Location access denied');
+                        // Location access denied
                     }
                 );
             }
@@ -2944,39 +2950,40 @@
 
         // Schedule order - Open bottom sheet
         function scheduleOrder(companyName) {
-            // console.log('🔍 scheduleOrder() called for:', companyName);
             selectedCompany = companyName;
 
             // Get selected products for this company
             selectedProducts = [...serviceProducts[companyName]];
-
-            // console.log('📦 Selected products:', selectedProducts);
 
             if (selectedProducts.length === 0) {
                 showError('Please select at least one product first');
                 return;
             }
 
-            // console.log('✅ Products selected, starting schedule flow...');
             startScheduleFlow();
         }
 
         // Open schedule flow - same as scheduleOrder
         function openScheduleFlow(companyName) {
-            // console.log('🔍 openScheduleFlow() called for:', companyName);
             selectedCompany = companyName;
 
             // Get selected products for this company
-            selectedProducts = [...serviceProducts[companyName]];
-
-            // console.log('📦 Selected products:', selectedProducts);
-
-            if (selectedProducts.length === 0) {
-                showError('Please select at least one product first');
-                return;
+            let products = serviceProducts[companyName] || [];
+            
+            if (products.length === 0) {
+                // If no products selected, select first available product
+                const service = services.find(s => s.name === companyName);
+                if (service && service.products && service.products.length > 0) {
+                    // Add quantity to the product
+                    const firstProduct = { ...service.products[0] };
+                    firstProduct.quantity = firstProduct.minQuantity || 1;
+                    serviceProducts[companyName] = [firstProduct];
+                    products = [firstProduct];
+                }
             }
 
-            // console.log('✅ Products selected, starting schedule flow...');
+            // Update selectedProducts with the products for this company
+            selectedProducts = [...products];
             startScheduleFlow();
         }
 
@@ -3011,17 +3018,16 @@
 
         // Schedule Flow Bottom Sheet
         function startScheduleFlow() {
-            // console.log('🚀 Schedule Order button clicked - Starting complete flow...');
-
             // Reset to first step
             currentStep = 1;
-
+            updateStepIndicators();
+            
             const sheet = document.getElementById('scheduleFlowSheet');
             const content = document.getElementById('scheduleFlowContent');
+            
             sheet.classList.add('active');
             content.classList.add('active');
             sheet.classList.remove('pointer-events-none');
-            // console.log('✅ Schedule flow sheet opened');
 
             // Load saved recipients
             loadSavedRecipients();
@@ -3040,7 +3046,6 @@
                 sheet.classList.remove('active');
                 sheet.classList.add('pointer-events-none');
             }, 300);
-            // console.log('❌ Schedule flow sheet closed');
             // Reset step
             currentStep = 1;
             updateStepIndicators();
@@ -3256,16 +3261,25 @@
                     selectedDate = document.getElementById('deliveryDate').value;
                     selectedTime = document.getElementById('deliveryTime').value;
 
-                    // Use the comprehensive validation function
-                    if (!validateDateTimeSelection()) {
+                    // Validate date and time
+                    if (!selectedDate) {
+                        showError('Please select a delivery date');
+                        return false;
+                    }
+
+                    if (!selectedTime) {
+                        showError('Please select a delivery time');
+                        return false;
+                    }
+
+                    // Validate against working hours
+                    if (!validateDateTimeAgainstWorkingHours()) {
                         return false;
                     }
 
                     // Save date and time to order data
                     orderData.deliveryDate = selectedDate;
                     orderData.deliveryTime = selectedTime;
-                    orderData.deliveryDate = deliveryDate;
-                    orderData.deliveryTime = deliveryTime;
                     break;
                 case 4: // Quantity
                     if (selectedProducts.length === 0) {
@@ -3338,16 +3352,168 @@
             const minDateString = minDate.toISOString().split('T')[0];
             dateInput.min = minDateString;
 
-            // Set default to tomorrow
-            const tomorrow = new Date(now);
-            tomorrow.setDate(tomorrow.getDate() + 1);
-            const tomorrowString = tomorrow.toISOString().split('T')[0];
-            dateInput.value = tomorrowString;
-            selectedDate = tomorrowString;
+            // Get selected company's working days
+            const company = services.find(service => service.name === selectedCompany);
+            if (company && company.working_days && company.working_days.length > 0) {
+                // Find the next available working day
+                let nextAvailableDate = new Date(minDate);
+                let foundAvailableDate = false;
+                
+                // Check up to 30 days ahead
+                for (let i = 0; i < 30; i++) {
+                    const dayOfWeek = nextAvailableDate.toLocaleDateString('en-US', { weekday: 'long' });
+                    const isWorkingDay = company.working_days.some(wd => 
+                        wd.day.toLowerCase() === dayOfWeek.toLowerCase()
+                    );
+                    
+                    if (isWorkingDay) {
+                        foundAvailableDate = true;
+                        break;
+                    }
+                    
+                    // Move to next day
+                    nextAvailableDate.setDate(nextAvailableDate.getDate() + 1);
+                }
+                
+                if (foundAvailableDate) {
+                    const nextAvailableString = nextAvailableDate.toISOString().split('T')[0];
+                    dateInput.value = nextAvailableString;
+                    selectedDate = nextAvailableString;
+                } else {
+                    // If no working days found, use tomorrow as fallback
+                    const tomorrow = new Date(now);
+                    tomorrow.setDate(tomorrow.getDate() + 1);
+                    const tomorrowString = tomorrow.toISOString().split('T')[0];
+                    dateInput.value = tomorrowString;
+                    selectedDate = tomorrowString;
+                }
+            } else {
+                // Set default to tomorrow if no working days data
+                const tomorrow = new Date(now);
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                const tomorrowString = tomorrow.toISOString().split('T')[0];
+                dateInput.value = tomorrowString;
+                selectedDate = tomorrowString;
+            }
+            
+            // Add event listener to update time slots when date changes
+            dateInput.addEventListener('change', function() {
+                selectedDate = this.value;
+                generateTimeSlots();
+            });
         }
 
-        // Generate time slots
+        // Generate time slots based on company working hours
         function generateTimeSlots() {
+            const timeSlotsGrid = document.getElementById('timeSlotsGrid');
+            timeSlotsGrid.innerHTML = '';
+
+            // Get selected company's working hours for the selected date
+            const company = services.find(service => service.name === selectedCompany);
+            if (!company || !company.working_days || !selectedDate) {
+                // Fallback to default time slots if no working hours data
+                generateDefaultTimeSlots();
+                return;
+            }
+
+            // Get day of week for selected date
+            const selectedDateObj = new Date(selectedDate);
+            const dayOfWeek = selectedDateObj.toLocaleDateString('en-US', { weekday: 'long' });
+            
+            // Find working hours for this day
+            const todayWorkingHours = company.working_days.find(wd => 
+                wd.day.toLowerCase() === dayOfWeek.toLowerCase()
+            );
+
+            if (!todayWorkingHours || !todayWorkingHours.time) {
+                // No working hours for this day
+                timeSlotsGrid.innerHTML = '<p class="text-gray-400 text-center">No working hours for this day</p>';
+                return;
+            }
+
+            // Parse working hours (e.g., "8:00 AM - 6:00 PM")
+            const timeRange = todayWorkingHours.time;
+            const timeMatch = timeRange.match(/(\d{1,2}:\d{2}\s*[AP]M)\s*-\s*(\d{1,2}:\d{2}\s*[AP]M)/i);
+            
+            if (!timeMatch) {
+                // If parsing fails, use default time slots
+                generateDefaultTimeSlots();
+                return;
+            }
+
+            const openingTime = timeMatch[1];
+            const closingTime = timeMatch[2];
+
+            // Convert to 24-hour format for easier manipulation
+            const openingHour = convertTo24Hour(openingTime);
+            const closingHour = convertTo24Hour(closingTime);
+
+            // Generate time slots based on working hours
+            const timeSlots = [];
+            for (let hour = openingHour; hour < closingHour; hour++) {
+                const time24 = `${hour.toString().padStart(2, '0')}:00`;
+                const label = convertTo12Hour(time24);
+                
+                // Check if it's at least 2 hours from now for same-day delivery
+                const now = new Date();
+                const slotDateTime = new Date(selectedDate);
+                slotDateTime.setHours(hour, 0, 0, 0);
+                const minDateTime = new Date(now.getTime() + 2 * 60 * 60 * 1000);
+                
+                const available = slotDateTime >= minDateTime;
+                
+                timeSlots.push({
+                    time: time24,
+                    label: label,
+                    available: available
+                });
+            }
+
+            // Update the time select dropdown
+            const timeSelect = document.getElementById('deliveryTime');
+            timeSelect.innerHTML = '<option value="">Select Time</option>';
+            
+            timeSlots.forEach(slot => {
+                const option = document.createElement('option');
+                option.value = slot.time;
+                option.textContent = slot.label;
+                if (!slot.available) {
+                    option.disabled = true;
+                    option.textContent += ' (Unavailable)';
+                }
+                timeSelect.appendChild(option);
+            });
+
+            // Add event listener to update selected time when dropdown changes
+            timeSelect.onchange = function() {
+                selectedTime = this.value;
+                // Update button selection to match dropdown
+                document.querySelectorAll('.time-slot-btn').forEach(btn => {
+                    btn.classList.remove('selected');
+                    if (btn.textContent === convertTo12Hour(selectedTime)) {
+                        btn.classList.add('selected');
+                    }
+                });
+            };
+
+            // Generate time slot buttons
+            timeSlots.forEach(slot => {
+                const timeSlotBtn = document.createElement('button');
+                timeSlotBtn.type = 'button';
+                timeSlotBtn.className = `time-slot-btn ${slot.available ? '' : 'disabled'}`;
+                timeSlotBtn.textContent = slot.label;
+                timeSlotBtn.disabled = !slot.available;
+
+                if (slot.available) {
+                    timeSlotBtn.onclick = () => selectTimeSlot(slot.time, slot.label, timeSlotBtn);
+                }
+
+                timeSlotsGrid.appendChild(timeSlotBtn);
+            });
+        }
+
+        // Generate default time slots (fallback)
+        function generateDefaultTimeSlots() {
             const timeSlotsGrid = document.getElementById('timeSlotsGrid');
             timeSlotsGrid.innerHTML = '';
 
@@ -3365,6 +3531,34 @@
                 { time: '18:00', label: '6:00 PM', available: true }
             ];
 
+            // Update the time select dropdown
+            const timeSelect = document.getElementById('deliveryTime');
+            timeSelect.innerHTML = '<option value="">Select Time</option>';
+            
+            timeSlots.forEach(slot => {
+                const option = document.createElement('option');
+                option.value = slot.time;
+                option.textContent = slot.label;
+                if (!slot.available) {
+                    option.disabled = true;
+                    option.textContent += ' (Unavailable)';
+                }
+                timeSelect.appendChild(option);
+            });
+
+            // Add event listener to update selected time when dropdown changes
+            timeSelect.onchange = function() {
+                selectedTime = this.value;
+                // Update button selection to match dropdown
+                document.querySelectorAll('.time-slot-btn').forEach(btn => {
+                    btn.classList.remove('selected');
+                    if (btn.textContent === convertTo12Hour(selectedTime)) {
+                        btn.classList.add('selected');
+                    }
+                });
+            };
+
+            // Generate time slot buttons
             timeSlots.forEach(slot => {
                 const timeSlotBtn = document.createElement('button');
                 timeSlotBtn.type = 'button';
@@ -3378,6 +3572,87 @@
 
                 timeSlotsGrid.appendChild(timeSlotBtn);
             });
+        }
+
+        // Convert 12-hour time to 24-hour format
+        function convertTo24Hour(time12) {
+            const match = time12.match(/(\d{1,2}):(\d{2})\s*([AP]M)/i);
+            if (!match) return 8; // Default to 8 AM
+            
+            let [, hours, minutes, period] = match;
+            hours = parseInt(hours);
+            
+            if (period.toUpperCase() === 'PM' && hours !== 12) {
+                hours += 12;
+            } else if (period.toUpperCase() === 'AM' && hours === 12) {
+                hours = 0;
+            }
+            
+            return hours;
+        }
+
+        // Convert 24-hour time to 12-hour format
+        function convertTo12Hour(time24) {
+            const [hours, minutes] = time24.split(':');
+            const hour = parseInt(hours);
+            const period = hour >= 12 ? 'PM' : 'AM';
+            const displayHour = hour > 12 ? hour - 12 : (hour === 0 ? 12 : hour);
+            return `${displayHour}:${minutes} ${period}`;
+        }
+
+        // Validate selected date and time against company working hours
+        function validateDateTimeAgainstWorkingHours() {
+            const company = services.find(service => service.name === selectedCompany);
+            if (!company || !company.working_days || !selectedDate || !selectedTime) {
+                return true; // Skip validation if no working hours data
+            }
+
+            // Get day of week for selected date
+            const selectedDateObj = new Date(selectedDate);
+            const dayOfWeek = selectedDateObj.toLocaleDateString('en-US', { weekday: 'long' });
+            
+            // Find working hours for this day
+            const todayWorkingHours = company.working_days.find(wd => 
+                wd.day.toLowerCase() === dayOfWeek.toLowerCase()
+            );
+
+            if (!todayWorkingHours || !todayWorkingHours.time) {
+                showError('Selected company is not available on this day');
+                return false;
+            }
+
+            // Parse working hours
+            const timeRange = todayWorkingHours.time;
+            const timeMatch = timeRange.match(/(\d{1,2}:\d{2}\s*[AP]M)\s*-\s*(\d{1,2}:\d{2}\s*[AP]M)/i);
+            
+            if (!timeMatch) {
+                return true; // Skip validation if parsing fails
+            }
+
+            const openingTime = timeMatch[1];
+            const closingTime = timeMatch[2];
+            const openingHour = convertTo24Hour(openingTime);
+            const closingHour = convertTo24Hour(closingTime);
+            const selectedHour = parseInt(selectedTime.split(':')[0]);
+
+            // Check if selected time is within working hours
+            if (selectedHour < openingHour || selectedHour >= closingHour) {
+                showError(`Selected time is outside working hours (${openingTime} - ${closingTime})`);
+                return false;
+            }
+
+            // Check if it's at least 2 hours from now for same-day delivery
+            const now = new Date();
+            const selectedDateTime = new Date(selectedDate);
+            selectedDateTime.setHours(selectedHour, 0, 0, 0);
+            const minDateTime = new Date(now.getTime() + 2 * 60 * 60 * 1000);
+            
+            if (selectedDateTime < minDateTime) {
+                showError('Orders must be scheduled at least 2 hours in advance');
+                return false;
+            }
+
+            return true;
         }
 
         // Select time slot
@@ -3419,22 +3694,43 @@
             event.target.classList.add('active');
 
             // Show/hide relevant fields
-            const individualFields = document.getElementById('individualRecipientFields');
-            const businessFields = document.getElementById('businessRecipientFields');
-            const youFields = document.getElementById('youRecipientFields');
+            const youInfo = document.getElementById('youRecipientInfo');
+            const nameContainer = document.getElementById('recipientNameContainer');
+            const phoneContainer = document.getElementById('recipientPhoneContainer');
+            const emailContainer = document.getElementById('recipientEmailContainer');
+            const businessTypeContainer = document.getElementById('businessTypeContainer');
+            const businessNameContainer = document.getElementById('businessNameContainer');
 
             if (type === 'individual') {
-                individualFields.style.display = 'block';
-                businessFields.style.display = 'none';
-                youFields.style.display = 'none';
+                // Hide "You" info
+                youInfo.style.display = 'none';
+                // Show individual fields
+                nameContainer.classList.remove('hidden');
+                phoneContainer.classList.remove('hidden');
+                emailContainer.classList.remove('hidden');
+                // Hide business fields
+                businessTypeContainer.classList.add('hidden');
+                businessNameContainer.classList.add('hidden');
             } else if (type === 'business') {
-                individualFields.style.display = 'block';
-                businessFields.style.display = 'block';
-                youFields.style.display = 'none';
+                // Hide "You" info
+                youInfo.style.display = 'none';
+                // Show individual fields
+                nameContainer.classList.remove('hidden');
+                phoneContainer.classList.remove('hidden');
+                emailContainer.classList.remove('hidden');
+                // Show business fields
+                businessTypeContainer.classList.remove('hidden');
+                businessNameContainer.classList.remove('hidden');
             } else { // 'you'
-                individualFields.style.display = 'none';
-                businessFields.style.display = 'none';
-                youFields.style.display = 'block';
+                // Show "You" info
+                youInfo.style.display = 'block';
+                // Hide individual fields
+                nameContainer.classList.add('hidden');
+                phoneContainer.classList.add('hidden');
+                emailContainer.classList.add('hidden');
+                // Hide business fields
+                businessTypeContainer.classList.add('hidden');
+                businessNameContainer.classList.add('hidden');
                 loadUserProfileData();
             }
         }
@@ -3475,7 +3771,12 @@
         }
 
         // Add event listener to save user address when updated
-        document.getElementById('recipientAddress').addEventListener('input', saveUserAddress);
+        document.addEventListener('DOMContentLoaded', function() {
+            const addressField = document.getElementById('recipientAddress');
+            if (addressField) {
+                addressField.addEventListener('input', saveUserAddress);
+            }
+        });
 
         // Load customer data from database
         async function loadCustomerData() {
@@ -3502,8 +3803,6 @@
                         document.getElementById('youNameDisplay').textContent = customerProfile.full_name;
                         document.getElementById('youPhoneDisplay').textContent = customerProfile.phone_number;
                         document.getElementById('youEmailDisplay').textContent = customerProfile.email;
-                        
-                        console.log('✅ Customer data loaded:', orderData.customer);
                     }
                 }
             } catch (error) {
@@ -3530,15 +3829,44 @@
             }
         }
 
-        // Load saved recipients from localStorage
-        function loadSavedRecipients() {
-            // Initialize with empty array - will be populated from database
-            savedRecipients = [];
+        // Load saved recipients from database
+        async function loadSavedRecipients() {
+            // Show loading state
+            const savedList = document.getElementById('savedRecipientsList');
+            savedList.innerHTML = `
+                <div class="flex flex-col items-center justify-center py-8">
+                    <div class="w-8 h-8 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin mb-3"></div>
+                    <p class="text-gray-400 text-sm">Loading saved recipients...</p>
+                </div>
+            `;
             
-            // Clear any existing sample data from localStorage
-            localStorage.removeItem('savedRecipients');
-
-            updateSavedRecipientsList();
+            try {
+                // Get current user
+                const user = await window.account.get();
+                console.log('🔍 Current user:', user.$id);
+                
+                // Fetch saved recipients from database
+                if (window.OrderManager) {
+                    const orderManager = new window.OrderManager();
+                    const recipients = await orderManager.getSavedRecipients(user.$id);
+                    
+                    console.log('📋 Retrieved recipients:', recipients);
+                    
+                    // Update global savedRecipients array
+                    savedRecipients = recipients || [];
+                    
+                    // Update the UI
+                    updateSavedRecipientsList();
+                } else {
+                    console.error('❌ OrderManager not available');
+                    savedRecipients = [];
+                    updateSavedRecipientsList();
+                }
+            } catch (error) {
+                console.error('❌ Error loading saved recipients:', error);
+                savedRecipients = [];
+                updateSavedRecipientsList();
+            }
         }
 
         // Update saved recipients list
@@ -3604,23 +3932,37 @@
         }
 
         // Delete saved recipient
-        function deleteSavedRecipient(recipientId) {
+        async function deleteSavedRecipient(recipientId) {
             if (confirm('Are you sure you want to delete this saved recipient?')) {
-                // Remove from array
-                savedRecipients = savedRecipients.filter(r => r.id !== recipientId);
+                try {
+                    if (!window.OrderManager) {
+                        showError('Unable to delete recipient. Please try again.');
+                        return;
+                    }
 
-                // Update localStorage
-                localStorage.setItem('savedRecipients', JSON.stringify(savedRecipients));
-
-                // Update UI
-                updateSavedRecipientsList();
-
-                // Show success message
-                showSuccess('Recipient deleted successfully');
-
-                // If this was the selected recipient, clear selection
-                if (selectedSavedRecipient && selectedSavedRecipient.id === recipientId) {
-                    selectedSavedRecipient = null;
+                    const orderManager = new window.OrderManager();
+                    
+                    // Delete from database
+                    await orderManager.deleteRecipient(recipientId);
+                    
+                    // Remove from local array
+                    savedRecipients = savedRecipients.filter(r => r.id !== recipientId);
+                    
+                    // Update UI
+                    updateSavedRecipientsList();
+                    
+                    // Show success message
+                    showSuccess('Recipient deleted successfully');
+                    
+                    // If this was the selected recipient, clear selection
+                    if (selectedSavedRecipient && selectedSavedRecipient.id === recipientId) {
+                        selectedSavedRecipient = null;
+                    }
+                    
+                    console.log('✅ Recipient deleted from database:', recipientId);
+                } catch (error) {
+                    console.error('❌ Error deleting recipient:', error);
+                    showError('Failed to delete recipient. Please try again.');
                 }
             }
 
@@ -3628,47 +3970,71 @@
             event.stopPropagation();
         }
 
-        // Save recipient to localStorage
-        function saveRecipient() {
-            const name = document.getElementById('recipientName').value;
-            const phone = document.getElementById('recipientPhone').value;
-            const email = document.getElementById('recipientEmail').value;
-            const address = document.getElementById('recipientAddress').value;
-
-            const newRecipient = {
-                id: Date.now(),
-                name,
-                phone,
-                email,
-                address,
-                type: recipientType
-            };
-
-            if (recipientType === 'business') {
-                newRecipient.businessName = document.getElementById('businessName').value;
-                newRecipient.businessType = document.getElementById('businessType').value;
+        // Save recipient to database
+        async function saveRecipient() {
+            if (!window.OrderManager || !orderData.customer || !orderData.customer.id) {
+                showError('Unable to save recipient. Please make sure you are logged in.');
+                return;
             }
 
-            // Check if recipient already exists
-            const existingIndex = savedRecipients.findIndex(r =>
-                r.name === name && r.phone === phone && r.email === email
-            );
+            try {
+                const orderManager = new window.OrderManager();
+                
+                // Prepare recipient data
+                const recipientData = {
+                    type: recipientType,
+                    name: document.getElementById('recipientName').value,
+                    phone: document.getElementById('recipientPhone').value,
+                    email: document.getElementById('recipientEmail').value,
+                    address: document.getElementById('recipientAddress').value,
+                    businessName: document.getElementById('businessName').value || '',
+                    businessType: document.getElementById('businessType').value || ''
+                };
 
-            if (existingIndex === -1) {
-                savedRecipients.push(newRecipient);
-                // Save to localStorage
-                localStorage.setItem('savedRecipients', JSON.stringify(savedRecipients));
-                updateSavedRecipientsList();
-
+                // Save to database
+                const result = await orderManager.saveRecipient(orderData.customer.id, recipientData);
+                
+                // Reload saved recipients
+                await loadSavedRecipients();
+                
                 // Show success message
                 showSuccess('Recipient saved successfully');
+                
+                console.log('✅ Recipient saved to database:', result.$id);
+            } catch (error) {
+                console.error('❌ Error saving recipient:', error);
+                showError('Failed to save recipient. Please try again.');
             }
         }
-
+        
         // Update date and time step
         function updateDateTimeStep() {
+            console.log('🔍 Updating date/time step...');
+            console.log('🔍 Selected company:', selectedCompany);
+            console.log('🔍 Services loaded:', services.length > 0);
+            
+            // Display company working hours
+            const company = services.find(service => service.name === selectedCompany);
+            const workingHoursDisplay = document.getElementById('workingHoursDisplay');
+            const workingHoursText = document.getElementById('workingHoursText');
+            
+            if (company && company.working_days && company.working_days.length > 0) {
+                console.log('🔍 Company working days:', company.working_days);
+                // Format working days display
+                const workingDaysList = company.working_days.map(wd => 
+                    `${wd.day}: ${wd.time}`
+                ).join(', ');
+                
+                workingHoursText.textContent = workingDaysList;
+                workingHoursDisplay.style.display = 'block';
+            } else {
+                console.log('🔍 No working days found for company');
+                workingHoursDisplay.style.display = 'none';
+            }
+            
             // Generate time slots
             generateTimeSlots();
+            console.log('🔍 Time slots generated');
 
             // If we already have date and time data, pre-fill the form
             if (orderData.deliveryDate) {
@@ -3691,7 +4057,87 @@
 
         // Update recipient step
         function updateRecipientStep() {
-            // If we already have recipient data, pre-fill the form
+            console.log('🔍 Updating recipient step...');
+            console.log('🔍 Current recipientType:', recipientType);
+            
+            // Initialize the recipient type to 'you' if not set
+            if (!recipientType) {
+                recipientType = 'you';
+                orderData.purchase_recipient_type = 'you';
+            }
+            
+            // Set the correct button state
+            document.querySelectorAll('.recipient-type-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            const activeBtn = document.getElementById('recipient' + recipientType.charAt(0).toUpperCase() + recipientType.slice(1));
+            if (activeBtn) {
+                activeBtn.classList.add('active');
+            }
+            
+            // Initialize field visibility based on recipient type
+            const youInfo = document.getElementById('youRecipientInfo');
+            const nameContainer = document.getElementById('recipientNameContainer');
+            const phoneContainer = document.getElementById('recipientPhoneContainer');
+            const emailContainer = document.getElementById('recipientEmailContainer');
+            const businessTypeContainer = document.getElementById('businessTypeContainer');
+            const businessNameContainer = document.getElementById('businessNameContainer');
+
+            console.log('🔍 Elements found:', {
+                youInfo: !!youInfo,
+                nameContainer: !!nameContainer,
+                phoneContainer: !!phoneContainer,
+                emailContainer: !!emailContainer,
+                businessTypeContainer: !!businessTypeContainer,
+                businessNameContainer: !!businessNameContainer
+            });
+
+            if (recipientType === 'individual') {
+                // Hide "You" info
+                youInfo.style.display = 'none';
+                // Show individual fields
+                nameContainer.classList.remove('hidden');
+                phoneContainer.classList.remove('hidden');
+                emailContainer.classList.remove('hidden');
+                // Hide business fields
+                businessTypeContainer.classList.add('hidden');
+                businessNameContainer.classList.add('hidden');
+                console.log('🔍 Set up for individual recipient');
+            } else if (recipientType === 'business') {
+                // Hide "You" info
+                youInfo.style.display = 'none';
+                // Show individual fields
+                nameContainer.classList.remove('hidden');
+                phoneContainer.classList.remove('hidden');
+                emailContainer.classList.remove('hidden');
+                // Show business fields
+                businessTypeContainer.classList.remove('hidden');
+                businessNameContainer.classList.remove('hidden');
+                console.log('🔍 Set up for business recipient');
+            } else { // 'you'
+                // Show "You" info
+                youInfo.style.display = 'block';
+                // Hide individual fields
+                nameContainer.classList.add('hidden');
+                phoneContainer.classList.add('hidden');
+                emailContainer.classList.add('hidden');
+                // Hide business fields
+                businessTypeContainer.classList.add('hidden');
+                businessNameContainer.classList.add('hidden');
+                console.log('🔍 Set up for "you" recipient');
+                loadUserProfileData();
+            }
+            
+            console.log('🔍 Field visibility after update:', {
+                youInfoDisplay: youInfo.style.display,
+                nameContainerHidden: nameContainer.classList.contains('hidden'),
+                phoneContainerHidden: phoneContainer.classList.contains('hidden'),
+                emailContainerHidden: emailContainer.classList.contains('hidden'),
+                businessTypeContainerHidden: businessTypeContainer.classList.contains('hidden'),
+                businessNameContainerHidden: businessNameContainer.classList.contains('hidden')
+            });
+            
+            // If we already have recipient data, pre-fill form
             if (orderData.recipient) {
                 if (recipientType !== 'you') {
                     document.getElementById('recipientName').value = orderData.recipient.name || '';
@@ -3711,31 +4157,53 @@
 
         // Update quantity step with selected products
         function updateQuantityStep() {
+            console.log('🔍 Updating quantity step...');
+            console.log('🔍 Selected products:', selectedProducts);
+            console.log('🔍 Selected company:', selectedCompany);
+            
             const selectedContainer = document.getElementById('selectedProductsContainer');
+            console.log('🔍 Container element:', selectedContainer);
 
             // Clear existing content
             selectedContainer.innerHTML = '';
 
             // Show selected products with quantity controls
             if (selectedProducts.length > 0) {
+                console.log('🔍 Displaying', selectedProducts.length, 'products');
                 selectedProducts.forEach((product, index) => {
+                    console.log(`🔍 Product ${index}:`, product);
+                    
+                    // Handle missing images
+                    const productImage = product.image || 
+                        (product.type === 'large-bottle' ? 'images/products/large-bottle.jpg' : 
+                         product.type === 'dispenser' ? 'images/products/dispenser.jpg' : null);
+                    
+                    const imageHtml = productImage ? 
+                        `<img src="${productImage}" alt="${product.name}" class="selected-product-image" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiBmaWxsPSIjNDA0NDRCIi8+CjxwYXRoIGQ9Ik0yMCAyNEw0NCA0ME0yMCA0MEw0NCAyNCIgc3Ryb2tlPSIjODA4MDgwIiBzdHJva2Utd2lkdGg9IjIiLz4KPGNpcmNsZSBjeD0iMzIiIGN5PSIyOCIgcj0iNCIgZmlsbD0iIzgwODA4MCIvPgo8L3N2Zz4K'">` :
+                        `<div class="selected-product-image-placeholder">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#808080" stroke-width="2">
+                                <path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                            </svg>
+                        </div>`;
+                    
                     const selectedItem = document.createElement('div');
                     selectedItem.className = 'selected-product-item';
                     selectedItem.innerHTML = `
-                        <img src="${product.image}" alt="${product.name}" class="selected-product-image">
+                        ${imageHtml}
                         <div class="selected-product-details">
                             <div class="selected-product-name">${product.name}</div>
                             <div class="selected-product-price">GHS ${product.price.toFixed(2)} each</div>
                         </div>
                         <div class="selected-product-quantity">
                             <button onclick="changeProductQuantity(${index}, -1)" class="quantity-btn-small">-</button>
-                            <span class="quantity-display-small">${product.quantity}</span>
+                            <span class="quantity-display-small">${product.quantity || 1}</span>
                             <button onclick="changeProductQuantity(${index}, 1)" class="quantity-btn-small">+</button>
                         </div>
                     `;
                     selectedContainer.appendChild(selectedItem);
                 });
             } else {
+                console.log('🔍 No products selected, showing message');
                 const noProducts = document.createElement('div');
                 noProducts.className = 'no-products-selected';
                 noProducts.textContent = 'No products selected. Please go back and select products.';
@@ -4293,24 +4761,28 @@
             completeOrderFlow();
         }
 
-        // Save order to localStorage for schedule history and database
+        // Save order to database only
         async function saveOrderToHistory() {
             try {
-                console.log('🚀 Starting to save order to schedule history and database...');
+                console.log('🚀 Starting to save order to database...');
                 console.log('📦 Order data to save:', orderData);
 
-                // First, save to database using OrderManager
+                // Save to database using OrderManager
                 if (window.OrderManager && orderData.customer && orderData.customer.id) {
                     try {
                         const orderManager = new window.OrderManager();
                         
                         // Prepare order data for database (orders table)
+                        const selectedCompanyData = services.find(s => s.name === selectedCompany);
+                        console.log('🔍 Selected company data:', selectedCompanyData);
+                        console.log('🔍 Branch ID from company:', selectedCompanyData?.branch_id);
+                        
                         const dbOrderData = {
                             // Required customer field
                             customer_id: orderData.customer.id,
                             
                             // Order details (other customer details to be added later when columns exist)
-                            branchId: window.currentCompany?.branch_id || '',
+                            branchId: selectedCompanyData?.branch_id || '',
                             deliveryTime: orderData.deliveryTime,
                             deliveryDate: orderData.deliveryDate,
                             orderComment: orderData.deliveryInstructions || '',
@@ -4322,6 +4794,8 @@
                             total: Number(orderData.total || 0),
                             buyerId: orderData.customer.id
                         };
+                        
+                        console.log('🔍 Final dbOrderData.branchId:', dbOrderData.branchId);
 
                         // Create order in database
                         const createdOrder = await orderManager.createOrder(dbOrderData);
@@ -4348,64 +4822,21 @@
                         }
                         
                         console.log('✅ Order saved to database:', createdOrder.$id);
+                        console.log('✅ Order ID:', createdOrder.$id);
+                        
+                        // Store order ID for reference
+                        orderData.orderId = createdOrder.$id;
                         
                     } catch (dbError) {
                         console.error('❌ Error saving order to database:', dbError);
-                        // Continue with localStorage fallback
+                        showError('Failed to save order. Please try again.');
+                        throw dbError;
                     }
+                } else {
+                    throw new Error('OrderManager not available or customer not logged in');
                 }
 
-                // Get existing orders from localStorage
-                let existingOrders = localStorage.getItem('phluowiseOrders');
-                let orders = existingOrders ? JSON.parse(existingOrders) : [];
-                console.log('📋 Existing orders count:', orders.length);
-
-                // Format date and time for display
-                const formattedDate = formatDate(selectedDate);
-                const formattedTime = formatTime(selectedTime);
-
-                // Add the completed order
-                const newOrder = {
-                    orderId: orderData.orderId,
-                    company: selectedCompany || 'Unknown Company',
-                    location: orderData.recipient ? orderData.recipient.address : 'Accra, Ghana',
-                    payment: 'Mobile Money',
-                    time: formattedTime,
-                    date: formattedDate,
-                    price: `GH₵${orderData.total.toFixed(2)}`,
-                    status: 'pending',
-                    statusText: 'Pending',
-                    statusColor: '#F2A78C',
-                    products: orderData.products,
-                    subtotal: orderData.subtotal,
-                    serviceFee: orderData.serviceFee,
-                    total: orderData.total,
-                    recipient: orderData.recipient,
-                    customer: orderData.customer, // Include customer details
-                    purchase_recipient_type: orderData.purchase_recipient_type, // Include purchase type
-                    paymentDetails: orderData.payment,
-                    timestamp: new Date().toISOString(),
-                    rating: orderData.rating,
-                    comment: orderData.comment,
-                    transactionId: orderData.transactionId,
-                    deliveryInstructions: orderData.deliveryInstructions,
-                    deliveryDate: selectedDate,
-                    deliveryTime: selectedTime
-                };
-
-                orders.unshift(newOrder); // Add to beginning
-                console.log('➕ New order created:', newOrder);
-                console.log('📊 Total orders after adding:', orders.length);
-
-                // Save to localStorage
-                localStorage.setItem('phluowiseOrders', JSON.stringify(orders));
-                console.log('💾 Order saved to localStorage with key: phluowiseOrders');
-                console.log('💾 Order saved to schedule history:', orderData.orderId);
-
-                // Verify it was saved
-                const savedOrders = localStorage.getItem('phluowiseOrders');
-                const parsedOrders = JSON.parse(savedOrders);
-                console.log('✅ Verification - saved orders count:', parsedOrders.length);
+                console.log('✅ Order successfully saved to database');
 
                 // Trigger storage event for schedule-history.html
                 window.dispatchEvent(new Event('storage'));
@@ -5008,7 +5439,7 @@
 
 <!-- Terms of Service Modal -->
 <div id="termsModal"
-    class="fixed inset-0 z-50 flex items-center justify-center pointer-events-none opacity-0 transition-all duration-300"
+    class="fixed inset-0 z-[10003] flex items-center justify-center pointer-events-none opacity-0 transition-all duration-300"
     style="background-color: rgba(0,0,0,0.8);">
     <div class="bg-[#060606] rounded-[20px] w-[95%] h-[90%] max-w-4xl flex flex-col transform scale-95 transition-transform duration-300"
         id="termsModalContent">
@@ -5032,6 +5463,7 @@
 <script src="https://cdn.jsdelivr.net/npm/appwrite@13.0.1"></script>
 <script src="js/appwriteConfig.js"></script>
 <script src="js/companyData.js"></script>
+<script src="js/orderManager.js"></script>
 <script src="js/notifications.js"></script>
 </body>
 

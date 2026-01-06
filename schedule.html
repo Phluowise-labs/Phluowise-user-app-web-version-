@@ -2655,11 +2655,9 @@
                     filterQueries.push(window.Query.equal('company_id', resolvedCompanyId));
                 }
 
-                // Build the query - if we have both branch_id and company_id, use AND logic
+                // Build the query - Appwrite automatically ANDs multiple queries
                 let finalQuery;
-                if (filterQueries.length > 1) {
-                    finalQuery = [window.Query.and(filterQueries)];
-                } else if (filterQueries.length === 1) {
+                if (filterQueries.length > 0) {
                     finalQuery = filterQueries;
                 } else {
                     // Fallback: no branch/company filter, just fetch all
@@ -2712,6 +2710,7 @@
                         price: priceNum,
                         image: imageUrl,
                         quantity: 1,
+                        type: type, // Add the type field from product_type
                         description: doc.size ? `${doc.size}` : (doc.product_type || 'Product')
                     };
                 });
@@ -4038,6 +4037,10 @@
                     return;
                 }
 
+                // Generate transaction ID before creating order
+                const transactionId = 'TXN' + Date.now().toString().slice(-8);
+                console.log('🔍 Generated transaction ID:', transactionId);
+
                 // Prepare order data
                 const orderPayload = {
                     buyerId: customerData.$id,
@@ -4048,6 +4051,7 @@
                     deliveryAddress: orderData.recipient.address,
                     orderComment: orderData.deliveryInstructions || '',
                     paymentMethod: orderData.payment.network,
+                    transactionId: transactionId, // Add transaction ID
                     deliveryName: selectedProducts.map(p => p.name).join(', '),
                     deliveryOrgType: orderData.recipient.type || 'individual',
                     total: Number(orderData.total || 0), // Add total amount
@@ -4114,6 +4118,7 @@
 
                 // Store order data for success page
                 orderData.orderId = order.$id;
+                orderData.transactionId = transactionId; // Store the transaction ID
                 orderData.timestamp = new Date().toISOString();
 
                 // Show success
@@ -4165,12 +4170,12 @@
         }
 
         function showPaymentSuccess() {
-            // Use real order data or generate fallback
+            // Use the transaction ID that was already generated during order creation
             const transactionId = orderData.transactionId || ('TXN' + Date.now().toString().slice(-8));
             document.getElementById('transactionIdDisplay').textContent = transactionId;
             document.getElementById('amountPaidDisplay').textContent = `GHS ${orderData.total.toFixed(2)}`;
 
-            // Store transaction ID for order record
+            // Store transaction ID for order record (in case it wasn't set)
             if (!orderData.transactionId) {
                 orderData.transactionId = transactionId;
             }
