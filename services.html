@@ -3968,7 +3968,31 @@
                             type: customerProfile.user_type
                         };
                         
-                        console.log('✅ Customer data loaded:', orderData.customer);
+                        // Store customer data in localStorage for schedule history page
+                        localStorage.setItem('customerData', JSON.stringify({
+                            $id: customerProfile.$id,
+                            uid: customerProfile.uid,
+                            email: customerProfile.email,
+                            full_name: customerProfile.full_name,
+                            phone_number: customerProfile.phone_number,
+                            user_type: customerProfile.user_type
+                        }));
+                        
+                        // Also store as userProfile for compatibility
+                        localStorage.setItem('userProfile', JSON.stringify({
+                            $id: customerProfile.$id,
+                            uid: customerProfile.uid,
+                            email: customerProfile.email,
+                            name: customerProfile.full_name,
+                            phone1: customerProfile.phone_number,
+                            type: customerProfile.user_type
+                        }));
+                        
+                        // Also store as currentUserId
+                        localStorage.setItem('currentUserId', customerProfile.$id);
+                        
+                        console.log(' Customer data loaded:', orderData.customer);
+                        console.log(' Customer data stored in localStorage for schedule history');
                         
                         // Update "You" display fields
                         const youNameDisplay = document.getElementById('youNameDisplay');
@@ -5017,9 +5041,9 @@
                             deliveryDate: orderData.deliveryDate,
                             orderComment: orderData.deliveryInstructions || '',
                             deliveryAddress: orderData.recipient.address,
-                            paymentMethod: selectedPaymentMethod || 'mobile',
+                            paymentMethod: orderData.payment?.network || selectedPaymentMethod || 'mobile',
                             transactionId: orderData.transactionId || '',
-                            deliveryName: orderData.recipient.name,
+                            deliveryName: orderData.purchase_recipient_type === 'you' ? (orderData.customer?.full_name || orderData.customer?.name || 'User') : (orderData.recipient.name || ''),
                             deliveryOrgType: orderData.recipient.type || '',
                             total: Number(orderData.total || 0),
                             buyerId: orderData.customer.id
