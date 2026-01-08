@@ -226,7 +226,7 @@
             height: 22px;
             border-radius: 50%;
             display: flex;
-            align-items: center;
+                align-items: center;
             justify-content: center;
             border: 2px solid #060606;
         }
@@ -933,7 +933,6 @@
     <script src="js/appwriteConfig.js"></script>
     <script src="js/theme.js"></script>
     <script src="js/companyData.js"></script>
-    <script src="js/cacheManager.js"></script>
     <script src="js/orderManager.js"></script>
     <script>
         let currentView = 'status';
@@ -943,7 +942,6 @@
         let orderManager = new OrderManager();
         let isInitialLoad = true;
         let isLoading = false;
-        let cachedOrders = null;
         let dataLoadInProgress = false;
 
         // Import Query from Appwrite SDK
@@ -969,6 +967,11 @@
                 loadInitialData();
             }, 50);
             
+            // Load user profile data
+            setTimeout(() => {
+                updateUserProfile();
+            }, 100);
+            
             // Preload essential functions
             preloadEssentialFunctions();
         });
@@ -983,17 +986,14 @@
         // Listen for storage events from services.html
         window.addEventListener('storage', function(e) {
             console.log('🔄 Storage event detected in schedule-history.html');
-            // Reload orders when storage changes (new order saved from services.html)
             loadInitialData();
             
-            // Show brief notification about new orders
             const newOrderNotification = document.createElement('div');
             newOrderNotification.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50 transition-all duration-300';
             newOrderNotification.innerHTML = 'New orders loaded!';
             newOrderNotification.style.transform = 'translateX(200%)';
             document.body.appendChild(newOrderNotification);
             
-            // Remove notification after 3 seconds
             setTimeout(() => {
                 if (newOrderNotification.parentNode) {
                     newOrderNotification.style.transform = 'translateX(0)';
@@ -1011,427 +1011,254 @@
         window.navigateToPage = navigateToPage;
         window.loadInitialData = loadInitialData;
 
-        // Optimized data loading algorithm - INSTANT LOAD
+        let currentPage = 0;
+        const ORDERS_PER_PAGE = 20;
+        let isLoadingMore = false;
+        let hasMoreOrders = true;
+        let lastOrderId = null;
+        
+        // Direct function to fetch company/branch data from database
+        async function fetchCompanyBranchData(branchId) {
+            try {
+                if (!branchId) return null;
+                
+                console.log(`🔍 Fetching branch data for branchId: ${branchId}`);
+                
+                // Try branches table first
+                const branchResponse = await window.databases.listDocuments(
+                    window.appwriteConfig.DATABASE_ID,
+                    window.appwriteConfig.BRANCHES_TABLE,
+                    [Query.equal('branch_id', branchId)]
+                );
+                
+                if (branchResponse.documents.length > 0) {
+                    const branch = branchResponse.documents[0];
+                    console.log(`✅ Found branch: ${branch.branch_name}`);
+                    return {
+                        name: branch.branch_name || branch.name || 'Unknown Company',
+                        profile_image: branch.profile_image ? 
+                            (branch.profile_image.startsWith('http') ? 
+                                branch.profile_image : 
+                                `https://nyc.cloud.appwrite.io/v1/storage/buckets/68b1c57b001542be7fbe/files/${branch.profile_image}/view?project=68b17582003582da69c8`) : 
+                            null
+                    };
+                }
+                
+                // If not found in branches, try companies table
+                const companyResponse = await window.databases.listDocuments(
+                    window.appwriteConfig.DATABASE_ID,
+                    window.appwriteConfig.COMPANY_TABLE,
+                    [Query.equal('company_id', branchId)]
+                );
+                
+                if (companyResponse.documents.length > 0) {
+                    const company = companyResponse.documents[0];
+                    console.log(`✅ Found company: ${company.name}`);
+                    return {
+                        name: company.name || 'Unknown Company',
+                        profile_image: null // Companies typically don't have profile images
+                    };
+                }
+                
+                console.warn(`⚠️ No company/branch found for branchId: ${branchId}`);
+                return null;
+                
+            } catch (error) {
+                console.error('❌ Error fetching company/branch data:', error);
+                return null;
+            }
+        }
+
         async function loadInitialData() {
             if (dataLoadInProgress) return;
             dataLoadInProgress = true;
             
             try {
-                // Try cache manager first for instant load
-                if (window.cacheManager) {
-                    const customerId = getCustomerId();
-                    if (customerId) {
-                        const cachedOrders = window.cacheManager.getCache('orders', customerId);
-                        if (cachedOrders && cachedOrders.length > 0) {
-                            console.log('📦 Loading orders from cache manager:', cachedOrders.length);
-                            orders = cachedOrders;
-                            renderOrders();
-                            updateFloatingButton();
-                        }
-                    }
-                }
+                console.log('🚀 Starting data fetch...');
                 
-                // Fallback to regular localStorage cache
-                if (orders.length === 0) {
-                    const cached = localStorage.getItem('phluowiseOrdersCache');
-                    const cacheTimestamp = localStorage.getItem('phluowiseOrdersCacheTime');
-                    const now = Date.now();
-                    
-                    // Use cache if less than 5 minutes old
-                    if (cached && cacheTimestamp && (now - parseInt(cacheTimestamp)) < 5 * 60 * 1000) {
-                        orders = JSON.parse(cached);
-                        renderOrders(); // Render immediately from cache
-                    }
-                }
+                orders = [];
+                currentPage = 0;
+                hasMoreOrders = true;
+                lastOrderId = null;
                 
-                // Show skeleton only if no cache
-                if (orders.length === 0) {
-                    showLoadingSkeleton();
-                }
+                showLoadingSkeleton();
                 
-                // Load bottles from localStorage (instant)
-                await loadBottlesFromStorage();
-                
-                // Load company data first (needed for company names and images)
-                if (window.companyDataManager) {
-                    await window.companyDataManager.fetchCompanyData();
-                    console.log('✅ Company data loaded:', window.companyDataManager.companies.length, 'companies');
-                }
-                
-                // Load fresh data in background
-                await Promise.all([
-                    loadOrdersFromDatabase()
-                ]);
+                // Load company data first
+                // Fetch orders directly from database
+                await fetchOrdersFromDatabase();
                 
             } catch (error) {
-                console.error('Error loading data:', error);
-                // Try cache manager as fallback
-                if (window.cacheManager && orders.length === 0) {
-                    const customerId = getCustomerId();
-                    if (customerId) {
-                        const cachedOrders = window.cacheManager.getCache('orders', customerId);
-                        if (cachedOrders && cachedOrders.length > 0) {
-                            console.log('📦 Using cache manager as fallback:', cachedOrders.length);
-                            orders = cachedOrders;
-                            renderOrders();
-                            updateFloatingButton();
-                            return;
-                        }
-                    }
-                }
-                
-                // Final fallback to regular localStorage
-                const cached = localStorage.getItem('phluowiseOrdersCache');
-                if (cached) {
-                    orders = JSON.parse(cached);
-                    renderOrders();
-                } else {
-                    showOfflineState();
-                }
+                console.error('❌ Error loading data:', error);
+                showOfflineState();
             } finally {
                 hideLoadingSkeleton();
                 dataLoadInProgress = false;
             }
         }
 
-        // Fast database loading with optimized queries and step-by-step loading
-        async function loadOrdersFromDatabase() {
+        function clearWeb2AppCache() {
+            try {
+                const keysToRemove = [];
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    if (key.includes('web2app') || key.includes('ordersCache') || key.includes('tempOrder')) {
+                        keysToRemove.push(key);
+                    }
+                }
+                
+                keysToRemove.forEach(key => {
+                    localStorage.removeItem(key);
+                    console.log('🗑️ Removed cache key:', key);
+                });
+                
+                sessionStorage.clear();
+                
+                console.log('✅ All web2app cache cleared');
+            } catch (e) {
+                console.warn('⚠️ Could not clear web2app cache:', e);
+            }
+        }
+
+        async function fetchOrdersFromDatabase(loadMore = false) {
             if (!navigator.onLine) {
-                console.log('📴 Offline mode - using cached data only');
+                console.log('📴 Offline mode - cannot fetch from database');
                 showOfflineState();
                 return;
             }
             
+            if (isLoadingMore || !hasMoreOrders) {
+                console.log('🔄 Already loading or no more orders');
+                return;
+            }
+            
+            isLoadingMore = true;
+            
             try {
-                let customerId = getCustomerId();
-                
+                const customerId = getCustomerId();
                 if (!customerId) {
-                    console.log('No customer ID found');
+                    console.error('❌ No customer ID found');
+                    showOfflineState();
                     return;
                 }
                 
-                console.log('🔄 Loading orders with web2app cache-first strategy...');
+                console.log(`🔍 Fetching orders page ${currentPage} for customer:`, customerId);
                 
-                // STEP 1: Always try cache first for instant UI
-                if (window.cacheManager) {
-                    const cachedOrders = window.cacheManager.getCache('orders', customerId);
-                    if (cachedOrders && cachedOrders.length > 0) {
-                        // Filter out dummy data from cache
-                        const filteredCache = cachedOrders.filter(order => !isDummyOrder(order));
-                        console.log('📦 Loading orders from cache for instant UI:', filteredCache.length, '(filtered from', cachedOrders.length, 'total)');
-                        orders = filteredCache;
-                        renderOrders();
-                        updateFloatingButton();
-                        
-                        // STEP 2: Background step-by-step refresh
-                        setTimeout(() => refreshOrdersStepByStep(customerId), 1000);
-                        return;
-                    }
+                const queries = [
+                    Query.equal('customer_id', customerId),
+                    Query.orderDesc('$createdAt'),
+                    Query.limit(ORDERS_PER_PAGE)
+                ];
+                
+                if (lastOrderId && loadMore) {
+                    queries.push(Query.cursorAfter(lastOrderId));
                 }
                 
-                // STEP 3: No cache available - load step-by-step from database
-                await loadOrdersStepByStepFromDatabase(customerId);
-                
-            } catch (error) {
-                console.error('❌ Error in loadOrdersFromDatabase:', error);
-                showOfflineState();
-            }
-        }
-
-        // Step-by-step refresh: new orders first, then older orders
-        async function refreshOrdersStepByStep(customerId) {
-            if (!navigator.onLine) {
-                console.log('📴 Offline - skipping step-by-step refresh');
-                return;
-            }
-            
-            try {
-                console.log('🔄 Step-by-step refresh - checking for new orders...');
-                
-                // Get current orders to compare against
-                const currentOrderIds = new Set(orders.map(o => o.$id || o.orderId));
-                
-                // Step 1: Load newest orders first (last 7 days)
-                const recentOrders = await loadOrdersByDateRange(customerId, 7);
-                
-                // Identify truly new orders
-                const newOrders = recentOrders.filter(order => {
-                    const orderId = order.$id || order.orderId;
-                    return !currentOrderIds.has(orderId);
-                });
-                
-                let allOrders = [...recentOrders];
-                
-                // Update UI with new orders immediately and show notification
-                if (newOrders.length > 0) {
-                    console.log('🆕 Found NEW orders:', newOrders.length, 'out of', recentOrders.length, 'total recent');
-                    
-                    // Show notification for new orders
-                    showNewOrdersNotification(newOrders.length);
-                    
-                    // Highlight new orders in the data
-                    newOrders.forEach(order => {
-                        order.isNew = true;
-                        order.newOrderTimestamp = Date.now();
-                    });
-                    
-                    orders = allOrders;
-                    renderOrders();
-                    updateFloatingButton();
-                    
-                    // Cache the updated orders
-                    if (window.cacheManager) {
-                        window.cacheManager.setCache('orders', allOrders, customerId);
-                    }
-                } else if (recentOrders.length > 0) {
-                    console.log('📋 Found updated recent orders (no new ones):', recentOrders.length);
-                    orders = allOrders;
-                    renderOrders();
-                    updateFloatingButton();
-                    
-                    // Cache the updated orders
-                    if (window.cacheManager) {
-                        window.cacheManager.setCache('orders', allOrders, customerId);
-                    }
-                }
-                
-                // Step 2: Load older orders in background (last 30 days)
-                setTimeout(async () => {
-                    const olderOrders = await loadOrdersByDateRange(customerId, 30, 7);
-                    if (olderOrders.length > 0) {
-                        console.log('📅 Found older orders:', olderOrders.length);
-                        allOrders = [...allOrders, ...olderOrders];
-                        
-                        // Sort by date (newest first)
-                        allOrders.sort((a, b) => {
-                            const dateA = new Date(a.$createdAt || a.orderDate || 0);
-                            const dateB = new Date(b.$createdAt || b.orderDate || 0);
-                            return dateB - dateA;
-                        });
-                        
-                        orders = allOrders;
-                        renderOrders();
-                        updateFloatingButton();
-                        
-                        // Update cache
-                        if (window.cacheManager) {
-                            window.cacheManager.setCache('orders', allOrders, customerId);
-                        }
-                    }
-                }, 2000);
-                
-                // Step 3: Load all remaining orders if needed
-                setTimeout(async () => {
-                    const allRemainingOrders = await loadAllOrdersForCustomer(customerId);
-                    if (allRemainingOrders.length > 0) {
-                        console.log('📚 Found remaining orders:', allRemainingOrders.length);
-                        
-                        // Merge and sort
-                        const mergedOrders = [...orders];
-                        allRemainingOrders.forEach(order => {
-                            if (!mergedOrders.find(o => o.$id === order.$id)) {
-                                mergedOrders.push(order);
-                            }
-                        });
-                        
-                        mergedOrders.sort((a, b) => {
-                            const dateA = new Date(a.$createdAt || a.orderDate || 0);
-                            const dateB = new Date(b.$createdAt || b.orderDate || 0);
-                            return dateB - dateA;
-                        });
-                        
-                        orders = mergedOrders;
-                        renderOrders();
-                        updateFloatingButton();
-                        
-                        // Final cache update
-                        if (window.cacheManager) {
-                            window.cacheManager.setCache('orders', mergedOrders, customerId);
-                        }
-                    }
-                }, 4000);
-                
-            } catch (error) {
-                console.error('❌ Step-by-step refresh failed:', error);
-                // Don't break UI - cache still working
-            }
-        }
-
-        // Load orders by date range
-        async function loadOrdersByDateRange(customerId, daysAgo, skipDays = 0) {
-            try {
-                const cutoffDate = new Date();
-                cutoffDate.setDate(cutoffDate.getDate() - daysAgo);
-                
-                const skipDate = new Date();
-                skipDate.setDate(skipDate.getDate() - skipDays);
-                
-                console.log(`📅 Loading orders from ${skipDays} to ${daysAgo} days ago`);
-                
-                // Try OrderManager first
-                try {
-                    const ordersFromDB = await orderManager.getOrdersByCustomer(customerId);
-                    const filteredOrders = ordersFromDB.filter(order => {
-                        const orderDate = new Date(order.$createdAt || order.orderDate);
-                        return orderDate <= skipDate && orderDate >= cutoffDate;
-                    });
-                    
-                    const minimalOrders = [];
-                    for (const order of filteredOrders) {
-                        try {
-                            const minimalOrder = processOrderMinimal(order);
-                            if (minimalOrder && !isDummyOrder(minimalOrder)) {
-                                minimalOrders.push(minimalOrder);
-                            } else if (isDummyOrder(minimalOrder)) {
-                                console.log('🗑️ Filtering out dummy order:', minimalOrder.orderId || minimalOrder.$id);
-                            }
-                        } catch (error) {
-                            console.warn('Error processing order:', order.$id, error);
-                        }
-                    }
-                    
-                    return minimalOrders;
-                } catch (orderManagerError) {
-                    console.warn('OrderManager failed, trying direct query:', orderManagerError);
-                }
-                
-                // Fallback to direct query
                 const response = await window.databases.listDocuments(
                     window.appwriteConfig.DATABASE_ID,
                     window.appwriteConfig.ORDERS_TABLE,
-                    [
-                        Query.equal('customer_id', customerId),
-                        Query.orderDesc('$createdAt'),
-                        Query.limit(100)
-                    ]
+                    queries
                 );
                 
-                const filteredOrders = response.documents.filter(order => {
-                    const orderDate = new Date(order.$createdAt || order.orderDate);
-                    return orderDate <= skipDate && orderDate >= cutoffDate;
-                });
+                console.log(`📊 Retrieved ${response.documents.length} orders from database`);
                 
-                const minimalOrders = [];
-                for (const order of filteredOrders) {
+                if (response.documents.length === 0) {
+                    hasMoreOrders = false;
+                    console.log('🏁 No more orders to load');
+                    return;
+                }
+                
+                const newOrders = [];
+                const processedOrderIds = new Set();
+                
+                for (const order of response.documents) {
                     try {
-                        const minimalOrder = processOrderMinimal(order);
-                        if (minimalOrder && !isDummyOrder(minimalOrder)) {
-                            minimalOrders.push(minimalOrder);
-                        } else if (isDummyOrder(minimalOrder)) {
-                            console.log('🗑️ Filtering out dummy order:', minimalOrder.orderId || minimalOrder.$id);
+                        const orderId = order.$id || order.orderId || order.id;
+                        
+                        if (processedOrderIds.has(orderId)) {
+                            console.log('⚠️ Skipping duplicate order:', orderId);
+                            continue;
+                        }
+                        
+                        const existingOrderIds = new Set(orders.map(o => o.$id || o.orderId));
+                        if (existingOrderIds.has(orderId)) {
+                            console.log('⚠️ Skipping existing order:', orderId);
+                            continue;
+                        }
+                        
+                        processedOrderIds.add(orderId);
+                        
+                        const minimalOrder = await processOrderMinimal(order);
+                        if (minimalOrder) {
+                            const orderCreatedAt = new Date(order.$createdAt || order.createdAt || Date.now());
+                            const fiveMinutesAgo = new Date();
+                            fiveMinutesAgo.setMinutes(fiveMinutesAgo.getMinutes() - 5);
+                            const isRecentlyCreated = orderCreatedAt > fiveMinutesAgo;
+                            
+                            minimalOrder.isNew = isRecentlyCreated && !loadMore;
+                            
+                            if (isRecentlyCreated && !loadMore) {
+                                console.log('🆕 Detected new order from DB:', orderId, 'created at:', orderCreatedAt.toISOString());
+                            }
+                            
+                            newOrders.push(minimalOrder);
                         }
                     } catch (error) {
-                        console.warn('Error processing order:', order.$id, error);
+                        console.warn('⚠️ Error processing order:', order.$id, error);
                     }
                 }
                 
-                return minimalOrders;
+                if (newOrders.length > 0) {
+                    lastOrderId = newOrders[newOrders.length - 1].$id;
+                }
+                
+                if (loadMore) {
+                    orders.push(...newOrders);
+                } else {
+                    orders = newOrders;
+                }
+                
+                console.log(`✅ Processed ${newOrders.length} valid orders from database`);
+                
+                renderOrders();
+                updateFloatingButton();
                 
             } catch (error) {
-                console.error(`❌ Error loading orders for ${daysAgo} days:`, error);
-                return [];
-            }
-        }
-
-        // Filter out dummy/sample orders
-        function isDummyOrder(order) {
-            if (!order) return true;
-            
-            // Check for dummy order patterns
-            const dummyPatterns = [
-                /test/i,
-                /demo/i,
-                /sample/i,
-                /dummy/i,
-                /fake/i,
-                /mock/i,
-                /example/i,
-                /12345/,
-                /00000/,
-                /xxxx/i,
-                /yyyy/i
-            ];
-            
-            // Check order ID
-            if (order.orderId && dummyPatterns.some(pattern => pattern.test(order.orderId))) {
-                return true;
-            }
-            
-            // Check customer name
-            if (order.customerName && dummyPatterns.some(pattern => pattern.test(order.customerName))) {
-                return true;
-            }
-            
-            // Check recipient name
-            if (order.recipientName && dummyPatterns.some(pattern => pattern.test(order.recipientName))) {
-                return true;
-            }
-            
-            // Check for obvious dummy amounts (like 0.01, 999.99, etc.)
-            if (order.total && (order.total === 0.01 || order.total === 999.99 || order.total === 0)) {
-                return true;
-            }
-            
-            // Check for test phone numbers
-            if (order.recipientPhone && (
-                order.recipientPhone.includes('123') ||
-                order.recipientPhone.includes('000') ||
-                order.recipientPhone.includes('555') ||
-                order.recipientPhone.includes('xxx')
-            )) {
-                return true;
-            }
-            
-            // Check for test emails
-            if (order.recipientEmail && (
-                order.recipientEmail.includes('test') ||
-                order.recipientEmail.includes('demo') ||
-                order.recipientEmail.includes('example') ||
-                order.recipientEmail.includes('sample')
-            )) {
-                return true;
-            }
-            
-            // Check for very old orders (more than 2 years old) that might be test data
-            if (order.$createdAt || order.orderDate) {
-                const orderDate = new Date(order.$createdAt || order.orderDate);
-                const twoYearsAgo = new Date();
-                twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
-                if (orderDate < twoYearsAgo) {
-                    console.log('🗑️ Filtering out very old order (possible test data):', order.orderId || order.$id);
-                    return true;
+                console.error('❌ Error fetching orders:', error);
+                if (!loadMore) {
+                    showOfflineState();
                 }
+            } finally {
+                isLoadingMore = false;
+                hideLoadingMoreIndicator();
             }
-            
-            return false;
         }
 
-        // Show notification for new orders
-        function showNewOrdersNotification(count) {
-            // Create notification element
-            const notification = document.createElement('div');
-            notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center space-x-2 animate-pulse';
-            notification.innerHTML = `
-                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"/>
-                </svg>
-                <span class="font-medium">🎉 ${count} new order${count > 1 ? 's' : ''} found!</span>
+        function showLoadingMoreIndicator() {
+            const container = document.getElementById('ordersList');
+            const existingIndicator = document.getElementById('loadingMoreIndicator');
+            
+            if (existingIndicator) return;
+            
+            const indicator = document.createElement('div');
+            indicator.id = 'loadingMoreIndicator';
+            indicator.className = 'flex justify-center py-4';
+            indicator.innerHTML = `
+                <div class="flex items-center gap-2 text-white/60">
+                    <div class="w-4 h-4 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div>
+                    <span class="text-sm">Loading more orders...</span>
+                </div>
             `;
             
-            document.body.appendChild(notification);
-            
-            // Auto-remove after 5 seconds
-            setTimeout(() => {
-                if (notification.parentNode) {
-                    notification.remove();
-                }
-            }, 5000);
-            
-            // Also show in console
-            console.log(`🎉 NOTIFICATION: ${count} new order${count > 1 ? 's' : ''} found!`);
+            container.appendChild(indicator);
         }
 
-        // Load all orders for customer
+        function hideLoadingMoreIndicator() {
+            const indicator = document.getElementById('loadingMoreIndicator');
+            if (indicator) {
+                indicator.remove();
+            }
+        }
+
         async function loadAllOrdersForCustomer(customerId) {
             try {
                 console.log('📚 Loading all remaining orders for customer...');
@@ -1449,7 +1276,7 @@
                 const minimalOrders = [];
                 for (const order of response.documents) {
                     try {
-                        const minimalOrder = processOrderMinimal(order);
+                        const minimalOrder = await processOrderMinimal(order);
                         if (minimalOrder) {
                             minimalOrders.push(minimalOrder);
                         }
@@ -1466,147 +1293,72 @@
             }
         }
 
-        // Step-by-step loading from database when no cache exists
-        async function loadOrdersStepByStepFromDatabase(customerId) {
+        async function processOrderMinimal(order) {
             try {
-                console.log('📡 No cache available - loading step-by-step from database...');
-                
-                // Show loading state
-                showLoadingSkeleton();
-                
-                // Step 1: Load recent orders first (instant UI)
-                const recentOrders = await loadOrdersByDateRange(customerId, 7);
-                if (recentOrders.length > 0) {
-                    console.log('📦 Loaded recent orders:', recentOrders.length);
-                    orders = recentOrders;
-                    renderOrders();
-                    updateFloatingButton();
-                    
-                    // Cache recent orders immediately
-                    if (window.cacheManager) {
-                        window.cacheManager.setCache('orders', recentOrders, customerId);
-                    }
-                } else {
-                    // Try to get any orders at all
-                    const anyOrders = await loadAllOrdersForCustomer(customerId);
-                    if (anyOrders.length > 0) {
-                        orders = anyOrders.slice(0, 10); // Show first 10 immediately
-                        renderOrders();
-                        updateFloatingButton();
-                        
-                        if (window.cacheManager) {
-                            window.cacheManager.setCache('orders', orders, customerId);
-                        }
-                        
-                        // Load rest in background
-                        setTimeout(() => {
-                            orders = anyOrders;
-                            renderOrders();
-                            updateFloatingButton();
-                            
-                            if (window.cacheManager) {
-                                window.cacheManager.setCache('orders', anyOrders, customerId);
-                            }
-                        }, 1000);
-                    } else {
-                        console.log('📭 No orders found for customer');
-                        renderOrders(); // Show empty state
-                    }
+                if (!order.$id || !order.customer_id) {
+                    console.warn('⚠️ Skipping invalid order (missing $id or customer_id):', order);
+                    return null;
                 }
                 
-                // Step 2: Continue loading in background
-                setTimeout(() => refreshOrdersStepByStep(customerId), 2000);
-                
-            } catch (error) {
-                console.error('❌ Step-by-step database load failed:', error);
-                
-                // Fallback to cache if available
-                if (window.cacheManager) {
-                    const cachedOrders = window.cacheManager.getCache('orders', customerId);
-                    if (cachedOrders && cachedOrders.length > 0) {
-                        console.log('📦 Using cache as fallback:', cachedOrders.length);
-                        orders = cachedOrders;
-                        renderOrders();
-                        updateFloatingButton();
-                        return;
-                    }
-                }
-                
-                showOfflineState();
-            } finally {
-                hideLoadingSkeleton();
-            }
-        }
-
-        // Minimal order processing for instant display
-        function processOrderMinimal(order) {
-            try {
-                // Extract basic order information
-                const orderId = order.$id || order.orderId || order.id || 'N/A';
+                const orderId = order.$id;
                 const orderStatus = order.orderStatus || order.status || 'pending';
-                const deliveryName = order.deliveryName || order.companyName || order.branchName || 'Unknown Company';
-                const deliveryAddress = order.deliveryAddress || order.address || order.location || 'Accra, Ghana';
+                const deliveryName = order.deliveryName || order.companyName || order.branchName || '';
+                const deliveryAddress = order.deliveryAddress || order.address || order.location || '';
                 const paymentMethod = order.paymentMethod || order.payment || 'Mobile Money';
                 const deliveryTime = order.deliveryTime || 'N/A';
                 const deliveryDate = order.deliveryDate || order.date || order.$createdAt || 'N/A';
                 const total = order.total || order.amount || order.price || 0;
-                const productName = order.productName || order.product || deliveryName; // Use company/branch name as product name
-                const productQty = order.productQty || order.quantity || 1;
                 
-                // Transform status
                 let transformedStatus = 'pending';
                 let statusText = 'Pending';
                 let statusColor = '#F2A78C';
                 
-                if (orderStatus === 'confirmed' || orderStatus === 'accepted' || orderStatus === 'accepted') {
+                if (orderStatus === 'confirmed' || orderStatus === 'accepted') {
                     transformedStatus = 'accepted';
                     statusText = 'Accepted';
                     statusColor = '#2C9043';
-                } else if (orderStatus === 'ongoing' || orderStatus === 'completed' || orderStatus === 'completed') {
+                } else if (orderStatus === 'ongoing' || orderStatus === 'completed') {
                     transformedStatus = 'ongoing';
                     statusText = 'Completed';
                     statusColor = '#2CAA48';
-                } else if (orderStatus === 'denied' || orderStatus === 'rejected' || orderStatus === 'denied') {
+                } else if (orderStatus === 'denied' || orderStatus === 'rejected') {
                     transformedStatus = 'denied';
                     statusText = 'Denied';
                     statusColor = '#F85D5D';
                 }
                 
-                // Try to get company image from merged company data
                 let companyImage = null;
                 let finalCompanyName = deliveryName;
                 
-                if (window.companyDataManager && order.branchId) {
+                const branchId = order.branchId || order.branch_id || order.company_id;
+                
+                if (branchId) {
                     try {
-                        // Use the merged data from companyDataManager
-                        const mergedData = window.companyDataManager.mergeCompanyAndBranchData();
-                        const branch = mergedData.find(c => 
-                            c.branch_id === order.branchId || 
-                            c.id === order.branchId || 
-                            c.$id === order.branchId
-                        );
+                        console.log(`🔍 Looking up company/branch for order ${orderId}, branchId: ${branchId}`);
                         
-                        if (branch) {
-                            // Use the branch name from merged data
-                            finalCompanyName = branch.branch_name || branch.name || deliveryName;
+                        const companyData = await fetchCompanyBranchData(branchId);
+                        
+                        if (companyData) {
+                            finalCompanyName = companyData.name;
+                            companyImage = companyData.profile_image;
                             
-                            // Get the profile image
-                            if (branch.profile_image) {
-                                companyImage = branch.profile_image.startsWith('http') ? 
-                                    branch.profile_image : 
-                                    `https://nyc.cloud.appwrite.io/v1/storage/buckets/68b1c57b001542be7fbe/files/${branch.profile_image}/view?project=68b17582003582da69c8`;
-                            }
-                            
-                            console.log(`🔍 Found branch for order ${orderId}:`, finalCompanyName, 'Image:', companyImage ? 'Yes' : 'No');
+                            console.log(`🔍 Found company data for order ${orderId}:`, finalCompanyName, 'Image:', companyImage ? 'Yes' : 'No');
                         } else {
-                            console.warn(`⚠️ Branch not found for branchId: ${order.branchId}`);
+                            console.warn(`⚠️ No company/branch data found for branchId: ${branchId}`);
                         }
                     } catch (error) {
-                        console.warn('Could not fetch company image:', error);
+                        console.warn('Could not fetch company/branch data:', error);
                     }
+                } else {
+                    console.warn(`⚠️ No branchId found for order ${orderId}. Available fields:`, Object.keys(order));
+                }
+                
+                if (!finalCompanyName || finalCompanyName === 'Unknown Company') {
+                    finalCompanyName = 'Company';
                 }
                 
                 return {
+                    $id: orderId,
                     orderId: orderId,
                     company: finalCompanyName,
                     companyImage: companyImage,
@@ -1624,9 +1376,8 @@
                     deliveryInstructions: order.orderComment || order.instructions || '',
                     deliveryDate: order.deliveryDate,
                     deliveryTime: order.deliveryTime,
-                    product: finalCompanyName, // Use company/branch name as product
-                    quantity: productQty,
-                    // Minimal data for instant display
+                    customer_id: order.customer_id,
+                    branchId: order.branchId,
                     _loadedDetails: false
                 };
             } catch (error) {
@@ -1635,10 +1386,9 @@
             }
         }
 
-        // Load additional details in background
         async function loadOrderDetailsBackground(minimalOrders) {
             for (let i = 0; i < minimalOrders.length; i++) {
-                if (i >= 10) break; // Limit to first 10 for performance
+                if (i >= 10) break;
                 
                 const order = minimalOrders[i];
                 if (order && !order._loadedDetails) {
@@ -1646,10 +1396,6 @@
                         await enrichOrderDetails(order);
                         order._loadedDetails = true;
                         
-                        // Update cache with enriched data
-                        localStorage.setItem('phluowiseOrdersCache', JSON.stringify(orders));
-                        
-                        // Re-render to show updated details
                         renderOrders();
                     } catch (error) {
                         console.warn('Background detail loading failed for order:', order.orderId);
@@ -1658,10 +1404,8 @@
             }
         }
 
-        // Enrich order with additional details
         async function enrichOrderDetails(order) {
             try {
-                // Get order items if orderManager is available
                 if (orderManager && typeof orderManager.getOrderItems === 'function') {
                     const orderItems = await orderManager.getOrderItems(order.orderId);
                     
@@ -1675,15 +1419,27 @@
                             type: item.productType || 'product'
                         }));
                         
-                        // Calculate totals
-                        order.subtotal = orderItems.reduce((sum, item) => sum + (item.productPrice || 0) * (item.productQty || 1), 0);
-                        order.serviceFee = 5;
+                        // Calculate subtotal properly from order items
+                        order.subtotal = orderItems.reduce((sum, item) => {
+                            const price = parseFloat(item.productPrice) || 0;
+                            const qty = parseInt(item.productQty) || 1;
+                            return sum + (price * qty);
+                        }, 0);
+                        
+                        // Calculate service fee: GHS0.10 per item
+                        order.serviceFee = orderItems.reduce((sum, item) => {
+                            const qty = parseInt(item.productQty) || 1;
+                            return sum + (0.10 * qty);
+                        }, 0);
+                        
+                        // Calculate total
                         order.total = order.subtotal + order.serviceFee;
                         order.price = `GH₵${order.total.toFixed(2)}`;
+                        
+                        console.log(`💰 Order ${order.orderId}: Subtotal: ${order.subtotal.toFixed(2)}, Service Fee: ${order.serviceFee.toFixed(2)}, Total: ${order.total.toFixed(2)}`);
                     }
                 }
                 
-                // Get recipient info if available
                 if (orderManager && typeof orderManager.getPurchaseRecipientInfo === 'function') {
                     const recipientInfo = await orderManager.getPurchaseRecipientInfo(order.orderId);
                     if (recipientInfo) {
@@ -1704,46 +1460,64 @@
             }
         }
 
-        // Fast customer ID extraction
         function getCustomerId() {
-            // Check multiple possible sources quickly
+            console.log('🔍 Getting customer ID from localStorage...');
+            
+            // Debug: Log all localStorage keys
+            console.log('📋 All localStorage keys:');
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                const value = localStorage.getItem(key);
+                console.log(`  ${key}: ${value.substring(0, 100)}${value.length > 100 ? '...' : ''}`);
+            }
+            
             const sources = [
                 () => {
                     const customerData = JSON.parse(localStorage.getItem('customerData') || '{}');
-                    return customerData.$id || customerData.uid || customerData.id;
+                    const id = customerData.$id || customerData.uid || customerData.id;
+                    console.log('🔍 customerData source:', id);
+                    return id;
                 },
                 () => {
                     const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
-                    return userProfile.$id || userProfile.uid || userProfile.id;
+                    const id = userProfile.$id || userProfile.uid || userProfile.id;
+                    console.log('🔍 userProfile source:', id);
+                    return id;
                 },
-                () => localStorage.getItem('currentUserId'),
+                () => {
+                    const id = localStorage.getItem('currentUserId');
+                    console.log('🔍 currentUserId source:', id);
+                    return id;
+                },
                 () => {
                     const userStr = localStorage.getItem('user');
                     if (userStr) {
                         try {
                             const user = JSON.parse(userStr);
-                            return user.$id || user.uid || user.id || user.userId;
+                            const id = user.$id || user.uid || user.id || user.userId;
+                            console.log('🔍 user source:', id);
+                            return id;
                         } catch (e) {
+                            console.log('🔍 user source - parse error');
                             return null;
                         }
                     }
                     return null;
                 },
                 () => {
-                    // Check for any localStorage key containing 'id' or 'user'
                     for (let i = 0; i < localStorage.length; i++) {
                         const key = localStorage.key(i);
                         if (key.includes('id') || key.includes('user') || key.includes('customer')) {
                             try {
                                 const value = JSON.parse(localStorage.getItem(key));
                                 if (value && (value.$id || value.uid || value.id || value.userId)) {
+                                    console.log('🔍 Found customer ID in key', key, ':', value.$id || value.uid || value.id || value.userId);
                                     return value.$id || value.uid || value.id || value.userId;
                                 }
                             } catch (e) {
-                                // Not JSON, try as string
                                 const value = localStorage.getItem(key);
                                 if (value && value.length > 10 && value.length < 50) {
-                                    // Looks like an ID
+                                    console.log('🔍 Found customer ID as string in key', key, ':', value);
                                     return value;
                                 }
                             }
@@ -1754,48 +1528,170 @@
             ];
             
             for (const source of sources) {
-                try {
-                    const id = source();
-                    if (id && id !== 'null' && id !== 'undefined') {
-                        console.log('Found customer ID:', id);
-                        return id;
-                    }
-                } catch (e) {
-                    continue;
+                const id = source();
+                if (id) {
+                    console.log('✅ Found customer ID:', id);
+                    return id;
                 }
             }
             
-            console.log('No customer ID found in localStorage');
+            console.log('❌ No customer ID found in any source');
             return null;
         }
 
-        // Load bottles from localStorage
-        function loadBottlesFromStorage() {
-            return new Promise((resolve) => {
-                setTimeout(() => {
-                    const savedBottles = localStorage.getItem('phluowiseBottles');
-                    if (savedBottles) {
-                        try {
-                            myBottles = JSON.parse(savedBottles);
-                        } catch (parseError) {
-                            myBottles = [];
+        // Fetch customer data from database
+        async function fetchCustomerData() {
+            try {
+                const customerId = getCustomerId();
+                if (!customerId) {
+                    console.warn('⚠️ No customer ID found, cannot fetch customer data');
+                    return null;
+                }
+                
+                console.log('🔍 Fetching customer data for:', customerId);
+                
+                const response = await window.databases.listDocuments(
+                    window.appwriteConfig.DATABASE_ID,
+                    window.appwriteConfig.CUSTOMER_TABLE,
+                    [Query.equal('uid', customerId)]
+                );
+                
+                if (response.documents.length > 0) {
+                    const customer = response.documents[0];
+                    console.log('✅ Found customer:', customer.full_name);
+                    return customer;
+                } else {
+                    console.warn('⚠️ No customer found with ID:', customerId);
+                    return null;
+                }
+            } catch (error) {
+                console.error('❌ Error fetching customer data:', error);
+                return null;
+            }
+        }
+
+        // Update user profile in menu
+        async function updateUserProfile() {
+            try {
+                const customer = await fetchCustomerData();
+                if (customer) {
+                    // Update user name
+                    const userNameElement = document.querySelector('.sliding-menu h2.text-white');
+                    if (userNameElement) {
+                        userNameElement.textContent = customer.full_name || 'User';
+                    }
+                    
+                    // Update user email
+                    const userEmailElement = document.querySelector('.sliding-menu p[class*="text-[#808080]"]');
+                    if (!userEmailElement) {
+                        // Try alternative approach - find the p element after h2
+                        const userNameElement = document.querySelector('.sliding-menu h2.text-white');
+                        if (userNameElement && userNameElement.nextElementSibling) {
+                            const emailElement = userNameElement.nextElementSibling;
+                            if (emailElement.tagName === 'P') {
+                                emailElement.textContent = customer.email || 'user@example.com';
+                            }
                         }
                     } else {
-                        myBottles = [];
+                        userEmailElement.textContent = customer.email || 'user@example.com';
                     }
-                    updateFloatingButton();
-                    resolve();
-                }, 0);
-            });
+                    
+                    console.log('✅ Updated user profile in menu');
+                } else {
+                    console.warn('⚠️ Could not update user profile - no customer data found');
+                }
+            } catch (error) {
+                console.error('❌ Error updating user profile:', error);
+            }
         }
 
-        // Backward compatibility function
-        function loadBottles() {
-            console.warn('loadBottles() is deprecated, use loadBottlesFromStorage() instead');
-            return loadBottlesFromStorage();
+        async function loadBottlesFromDatabase() {
+            try {
+                console.log('🍼 Fetching dispenser orders from database...');
+                
+                const customerId = getCustomerId();
+                if (!customerId) {
+                    console.log('❌ No customer ID found for bottles');
+                    return;
+                }
+                
+                // First, get orders that are completed/ongoing
+                const orderQueries = [
+                    Query.equal('customer_id', customerId),
+                    Query.equal('orderStatus', ['ongoing', 'completed', 'accepted', 'delivered']),
+                    Query.orderDesc('$createdAt'),
+                    Query.limit(100)
+                ];
+                
+                const ordersResponse = await window.databases.listDocuments(
+                    window.appwriteConfig.DATABASE_ID,
+                    window.appwriteConfig.ORDERS_TABLE,
+                    orderQueries
+                );
+                
+                console.log(`📊 Found ${ordersResponse.documents.length} completed/ongoing orders`);
+                
+                const bottles = [];
+                
+                for (const order of ordersResponse.documents) {
+                    try {
+                        // Get order items for this order
+                        const orderItems = await orderManager.getOrderItems(order.orderId || order.$id);
+                        
+                        if (orderItems && orderItems.length > 0) {
+                            for (const item of orderItems) {
+                                // Check if this item is a dispenser/bottle
+                                const productName = item.productName || '';
+                                const productType = item.productType || '';
+                                
+                                const isDispenserOrder = 
+                                    productType.toLowerCase() === 'dispenser' ||
+                                    productName.toLowerCase().includes('dispenser') ||
+                                    productName.toLowerCase().includes('bottle') ||
+                                    productName.toLowerCase().includes('20l') ||
+                                    productName.toLowerCase().includes('large');
+                                
+                                if (isDispenserOrder) {
+                                    const bottle = {
+                                        id: item.$id || order.$id,
+                                        orderId: order.orderId || order.$id,
+                                        company: order.deliveryName || order.companyName || 'Unknown Company',
+                                        product: productName,
+                                        orderDate: order.$createdAt || order.orderDate,
+                                        status: 'pending',
+                                        image: item.productImage,
+                                        quantity: item.productQty || 1,
+                                        price: item.productPrice || 0,
+                                        size: '20L',
+                                        description: `${item.productQty || 1} x ${productName}`,
+                                        purchaseCount: item.productQty || 1,
+                                        isLargeBottle: true,
+                                        dateAdded: new Date().toISOString().split('T')[0]
+                                    };
+                                    
+                                    bottles.push(bottle);
+                                    console.log(`✅ Found dispenser bottle: ${productName} in order ${order.orderId}`);
+                                }
+                            }
+                        }
+                    } catch (error) {
+                        console.error('⚠️ Error processing order for bottles:', order.$id, error);
+                    }
+                }
+                
+                // Update myBottles array
+                myBottles = bottles;
+                
+                console.log(`✅ Loaded ${myBottles.length} bottles from database`);
+                updateFloatingButton();
+                
+            } catch (error) {
+                console.error('❌ Error loading bottles from database:', error);
+                // If database fails, show error state
+                showOfflineState();
+            }
         }
 
-        // Show loading skeleton
         function showLoadingSkeleton() {
             const container = document.getElementById('ordersList');
             container.innerHTML = `
@@ -1807,7 +1703,6 @@
             `;
         }
 
-        // Hide loading skeleton
         function hideLoadingSkeleton() {
             const skeleton = document.getElementById('loadingSkeleton');
             if (skeleton) {
@@ -1815,7 +1710,6 @@
             }
         }
 
-        // Show offline state
         function showOfflineState() {
             const container = document.getElementById('ordersList');
             if (!container.innerHTML.includes('No orders found')) {
@@ -1837,12 +1731,11 @@
             }
         }
 
-        // Save bottles to localStorage
         function saveBottles() {
-            localStorage.setItem('phluowiseBottles', JSON.stringify(myBottles));
+            // Bottles data saved directly from database - no caching
+            console.log('💾 Bottles data saved from database');
         }
 
-        // Format short date for display
         function formatShortDate(dateString) {
             try {
                 const date = new Date(dateString);
@@ -1855,10 +1748,9 @@
             }
         }
 
-        // Format order sent time
         function formatOrderSentTime(timestamp) {
             try {
-                if (!timestamp) return 'Order sent: N/A';
+                if (!timestamp) return 'Order sent:\nN/A';
                 
                 const date = new Date(timestamp);
                 const now = new Date();
@@ -1868,28 +1760,26 @@
                 const diffDays = Math.floor(diffMs / 86400000);
                 
                 if (diffMins < 1) {
-                    return 'Order sent: Just now';
+                    return 'Order sent:\nJust now';
                 } else if (diffMins < 60) {
-                    return `Order sent: ${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
+                    return `Order sent:\n${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
                 } else if (diffHours < 24) {
-                    return `Order sent: ${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+                    return `Order sent:\n${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
                 } else if (diffDays < 7) {
-                    return `Order sent: ${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+                    return `Order sent:\n${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
                 } else {
-                    // Show actual date for older orders
                     const month = String(date.getMonth() + 1).padStart(2, '0');
                     const day = String(date.getDate()).padStart(2, '0');
                     const year = date.getFullYear();
                     const hours = String(date.getHours()).padStart(2, '0');
                     const mins = String(date.getMinutes()).padStart(2, '0');
-                    return `Order sent: ${month}/${day}/${year} at ${hours}:${mins}`;
+                    return `Order sent:\n${month}/${day}/${year} at ${hours}:${mins}`;
                 }
             } catch (e) {
-                return 'Order sent: N/A';
+                return 'Order sent:\nN/A';
             }
         }
 
-        // Update order status
         async function updateOrderStatus(orderId, newStatus) {
             const order = orders.find(o => o.orderId === orderId);
             if (order) {
@@ -1901,8 +1791,12 @@
                     order.completedAt = new Date().toISOString();
                     
                     // Check if this is a bottle/dispenser order
-                    if (order.product && (order.product.toLowerCase().includes('dispenser') || order.product.toLowerCase().includes('bottle'))) {
-                        addBottleFromOrder(order);
+                    if (order.products) {
+                        for (const product of order.products) {
+                            if (product.type === 'dispenser' || product.name.toLowerCase().includes('dispenser') || product.name.toLowerCase().includes('bottle')) {
+                                addBottleFromOrder(order, product);
+                            }
+                        }
                     }
                 }
 
@@ -1915,16 +1809,12 @@
                     );
                 } catch (error) {}
 
-                // Update cache
-                localStorage.setItem('phluowiseOrdersCache', JSON.stringify(orders));
-                
                 renderOrders();
             }
         }
 
-        // Add bottle from completed order
-        function addBottleFromOrder(order) {
-            const existingBottle = myBottles.find(b => b.orderId === order.orderId);
+        function addBottleFromOrder(order, product) {
+            const existingBottle = myBottles.find(b => b.orderId === order.orderId && b.product === product.name);
             if (existingBottle) {
                 return;
             }
@@ -1932,25 +1822,25 @@
             const newBottle = {
                 id: 'BOT' + Date.now(),
                 orderId: order.orderId,
-                name: order.product || 'Dispenser Bottle',
+                name: product.name || 'Dispenser Bottle',
                 size: '20L',
-                description: `1 ${order.product || 'Dispenser Bottle'}`,
-                price: `GH₵ ${order.subtotal || 10}.00`,
-                purchaseCount: order.quantity || 1,
+                description: `${product.quantity || 1} ${product.name || 'Dispenser Bottle'}`,
+                price: `GH₵ ${(product.price * (product.quantity || 1)).toFixed(2)}`,
+                purchaseCount: product.quantity || 1,
                 isLargeBottle: true,
                 status: 'pending',
                 dateAdded: new Date().toISOString().split('T')[0],
                 company: order.company,
-                orderDate: order.date
+                orderDate: order.date,
+                product: product.name
             };
 
             myBottles.push(newBottle);
             saveBottles();
             updateFloatingButton();
-            showNotification(`Bottle added to return tracker: ${order.product}`);
+            showNotification(`Bottle added to return tracker: ${product.name}`);
         }
 
-        // Get status text
         function getStatusText(status) {
             const texts = {
                 'pending': 'Pending',
@@ -1962,7 +1852,6 @@
             return texts[status] || status;
         }
 
-        // Get status color
         function getStatusColor(status) {
             const colors = {
                 'pending': '#F2A78C',
@@ -1974,7 +1863,6 @@
             return colors[status] || '#F2A78C';
         }
 
-        // Status tab switching
         function setStatusView(view) {
             currentView = view;
             const btns = ['status', 'ongoing', 'denied', 'completed'];
@@ -1989,18 +1877,32 @@
             renderOrders();
         }
 
-        // Render order cards
+        function removeNewStatusAfterDelay() {
+            setTimeout(() => {
+                let hasNewOrders = false;
+                orders.forEach(order => {
+                    if (order.isNew) {
+                        order.isNew = false;
+                        hasNewOrders = true;
+                    }
+                });
+                
+                if (hasNewOrders) {
+                    console.log(' Removing NEW status from orders');
+                    renderOrders();
+                }
+            }, 10000);
+        }
+
         function renderOrders() {
             const container = document.getElementById('ordersList');
             
             hideLoadingSkeleton();
             
-            // Clear container
             while (container.firstChild) {
                 container.removeChild(container.firstChild);
             }
 
-            // Filter orders based on current view
             const filteredOrders = orders.filter(order => {
                 if (currentView === 'status') {
                     return order.status === 'pending';
@@ -2014,7 +1916,6 @@
                 return true;
             });
             
-            // If no orders, show message
             if (filteredOrders.length === 0) {
                 container.innerHTML = `
                     <div class="flex flex-col items-center justify-center h-full text-white text-center p-8">
@@ -2038,7 +1939,6 @@
                 return;
             }
             
-            // Create and append order cards
             filteredOrders.forEach((order, index) => {
                 const card = document.createElement('button');
                 card.className = 'w-full flex items-center justify-center px-4 mb-3 animate-slide-up relative';
@@ -2046,12 +1946,10 @@
                 card.style.backgroundColor = 'var(--bg-second)';
                 card.dataset.orderId = order.orderId;
 
-                // Add special styling for new orders
                 if (order.isNew) {
                     card.style.border = '2px solid #10b981';
                     card.style.boxShadow = '0 0 20px rgba(16, 185, 129, 0.3)';
                     
-                    // Add "NEW" badge for new orders
                     const newBadge = document.createElement('div');
                     newBadge.className = 'absolute top-2 right-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full font-bold animate-pulse';
                     newBadge.textContent = 'NEW';
@@ -2059,16 +1957,14 @@
                     card.appendChild(newBadge);
                 }
 
-                // Set click handler - all cards use order modal
                 card.onclick = () => openOrderModal(order.status, order);
 
-                // Determine display image
+                // Use company/branch profile image instead of customer image
                 let displayImage = null;
                 if (order.companyImage) {
                     displayImage = order.companyImage;
-                } else {
-                    // Fallback to default company icon
-                    displayImage = null;
+                } else if (order.profile_image) {
+                    displayImage = order.profile_image;
                 }
 
                 card.innerHTML = `
@@ -2097,7 +1993,7 @@
                             ${order.payment ? `<span class="text-white/80 text-base font-[400]">${order.payment}</span>` : ''}
                             
                             <!-- Order Sent Date/Time -->
-                            <div class="text-white/60 text-sm">
+                            <div class="text-white/60 text-sm text-left">
                                 ${formatOrderSentTime(order.timestamp)}
                             </div>
                         </div>
@@ -2112,14 +2008,12 @@
 
                 container.appendChild(card);
                 
-                // Stagger animations for better performance
                 if (index < 10) {
                     card.style.animationDelay = `${index * 0.05}s`;
                 }
             });
         }
 
-        // Update floating button
         function updateFloatingButton() {
             const bottleBtn = document.getElementById('floatingBottleBtn');
             const counter = document.getElementById('bottleCounter');
@@ -2135,7 +2029,6 @@
             }
         }
 
-        // Show notification
         function showNotification(message, type = 'info') {
             const notification = document.createElement('div');
             
@@ -2189,7 +2082,6 @@
             }, 3000);
         }
 
-        // Order modal
         function openOrderModal(status, order) {
             currentOrderForDetails = order;
             const modal = document.getElementById('orderModal');
@@ -2281,7 +2173,6 @@
             }, 300);
         }
 
-        // Mark order as complete
         async function markOrderAsComplete(orderId) {
             const completeButton = document.querySelector(`button[onclick*="markOrderAsComplete('${orderId}')"]`);
             if (completeButton) {
@@ -2322,17 +2213,39 @@
             }
         }
 
-        // My Bottles Bottom Sheet Functions
         function openMyBottlesSheet() {
+            console.log('🍼 Opening My Bottles sheet...');
+            
             const sheet = document.getElementById('myBottlesSheet');
             const content = document.getElementById('myBottlesContent');
             const container = document.getElementById('bottlesContainer');
 
-            container.innerHTML = renderAllBottles();
+            if (!sheet || !content || !container) {
+                console.error('❌ Missing elements:', { sheet: !!sheet, content: !!content, container: !!container });
+                return;
+            }
 
+            // Show loading skeleton
+            container.innerHTML = `
+                <div id="bottlesLoadingSkeleton" class="space-y-4">
+                    <div class="skeleton skeleton-card"></div>
+                    <div class="skeleton skeleton-card"></div>
+                    <div class="skeleton skeleton-card"></div>
+                </div>
+            `;
+
+            // Open the sheet
             sheet.classList.remove('opacity-0', 'pointer-events-none');
             sheet.classList.add('opacity-100', 'z-50');
             setTimeout(() => content.classList.remove('translate-y-full'), 10);
+            
+            console.log('✅ Sheet opened!');
+
+            // Load bottles from database
+            loadBottlesFromDatabase().then(() => {
+                container.innerHTML = renderAllBottles();
+                console.log('✅ Bottles rendered from database!');
+            });
         }
 
         function closeMyBottlesSheet() {
@@ -2345,7 +2258,6 @@
             }, 300);
         }
 
-        // Render all bottles
         function renderAllBottles() {
             if (myBottles.length === 0) {
                 return `
@@ -2364,7 +2276,6 @@
             return myBottles.map(bottle => renderBottleCard(bottle)).join('');
         }
 
-        // Render a single bottle card
         function renderBottleCard(bottle) {
             const addedDate = formatShortDate(bottle.dateAdded);
             
@@ -2424,7 +2335,9 @@
             }
 
             let bottleImage = 'images/products/dispenser.jpg';
-            if (bottle.isLargeBottle || bottle.size === '20L') {
+            if (bottle.image) {
+                bottleImage = bottle.image;
+            } else if (bottle.isLargeBottle || bottle.size === '20L') {
                 bottleImage = 'images/products/large-bottle.jpg';
             }
 
@@ -2462,18 +2375,18 @@
                                 <div class="space-y-3">
                                     <!-- Size and Name -->
                                     <div>
-                                        <p class="text-white font-bold text-2xl">${bottle.size}</p>
-                                        <p class="text-blue-400 font-semibold text-lg">${bottle.name}</p>
+                                        <p class="text-white font-bold text-2xl">${bottle.size || '20L'}</p>
+                                        <p class="text-blue-400 font-semibold text-lg">${bottle.product || bottle.name || 'Dispenser Bottle'}</p>
                                     </div>
                                     
                                     <!-- Price -->
                                     <div class="space-y-1">
                                         <p class="text-gray-400 text-xs font-medium">Price:</p>
-                                        <p class="text-white font-bold text-2xl">${bottle.price}</p>
+                                        <p class="text-white font-bold text-2xl">GH₵${parseFloat(bottle.price || 0).toFixed(2)}</p>
                                     </div>
                                     
                                     <!-- Description -->
-                                    <p class="text-gray-400 text-sm">${bottle.description}</p>
+                                    <p class="text-gray-400 text-sm">${bottle.description || `${bottle.quantity || 1} x ${bottle.product || 'Dispenser Bottle'}`}</p>
                                 </div>
                             </div>
                         </div>
@@ -2484,10 +2397,10 @@
                         <div class="flex items-center justify-between">
                             <div>
                                 <p class="text-gray-400 text-xs font-medium mb-1">Number of purchase</p>
-                                <p class="text-white font-bold text-xl">${bottle.purchaseCount}</p>
+                                <p class="text-white font-bold text-xl">${bottle.purchaseCount || bottle.quantity || 1}</p>
                             </div>
                             <div class="flex items-center gap-2">
-                                <span class="text-xs text-gray-400">Order: ${bottle.orderId}</span>
+                                <span class="text-xs text-gray-400">Order: ${bottle.orderId || 'N/A'}</span>
                             </div>
                         </div>
                     </div>
@@ -2499,7 +2412,6 @@
             `;
         }
 
-        // Handle bottle return
         function handleBottleReturn(bottleId) {
             const bottle = myBottles.find(b => b.id === bottleId);
             if (bottle && bottle.status === 'pending') {
@@ -2519,13 +2431,12 @@
                 updateFloatingButton();
                 
                 closeMyBottlesSheet();
-                showNotification(`Return request sent for ${bottle.name}`);
+                showNotification(`Return request sent for ${bottle.product || bottle.name}`);
                 
                 setTimeout(() => openMyBottlesSheet(), 100);
             }
         }
 
-        // Order Details Bottom Sheet Functions
         function openOrderDetailsSheet() {
             closeOrderModal();
 
@@ -2559,13 +2470,6 @@
                     quantity: currentOrderForDetails.products.reduce((sum, p) => sum + (p.quantity || 0), 0),
                     unitPrice: currentOrderForDetails.products[0]?.price || 0
                 };
-            } else {
-                productInfo = {
-                    name: currentOrderForDetails.product || currentOrderForDetails.name || 'N/A',
-                    image: null,
-                    quantity: currentOrderForDetails.quantity || 1,
-                    unitPrice: currentOrderForDetails.unitPrice || (currentOrderForDetails.subtotal / (currentOrderForDetails.quantity || 1)) || 0
-                };
             }
 
             let displayImage = currentOrderForDetails.companyImage;
@@ -2578,9 +2482,32 @@
                 }
             }
 
-            const subtotal = isNewOrderStructure ? currentOrderForDetails.subtotal : (currentOrderForDetails.subtotal || 0);
-            const serviceFee = isNewOrderStructure ? currentOrderForDetails.serviceFee : (currentOrderForDetails.serviceFee || 5);
-            const total = isNewOrderStructure ? currentOrderForDetails.total : (currentOrderForDetails.total || 0);
+            const subtotal = currentOrderForDetails.subtotal || 0;
+            const serviceFee = currentOrderForDetails.serviceFee || 0;
+            const total = currentOrderForDetails.total || 0;
+            
+            // Calculate service fee if not already calculated
+            let calculatedServiceFee = serviceFee;
+            let calculatedSubtotal = subtotal;
+            
+            if (isNewOrderStructure && currentOrderForDetails.products) {
+                calculatedSubtotal = currentOrderForDetails.products.reduce((sum, product) => {
+                    const price = parseFloat(product.price) || 0;
+                    const qty = parseInt(product.quantity) || 1;
+                    return sum + (price * qty);
+                }, 0);
+                
+                calculatedServiceFee = currentOrderForDetails.products.reduce((sum, product) => {
+                    const qty = parseInt(product.quantity) || 1;
+                    return sum + (0.10 * qty); // GHS0.10 per item
+                }, 0);
+            }
+            
+            const calculatedTotal = calculatedSubtotal + calculatedServiceFee;
+            const displayTotal = total > 0 ? total : calculatedTotal;
+            const displaySubtotal = subtotal > 0 ? subtotal : calculatedSubtotal;
+            
+            console.log(`🧮 Price Breakdown: Subtotal: ${displaySubtotal.toFixed(2)}, Service Fee: ${calculatedServiceFee.toFixed(2)}, Total: ${displayTotal.toFixed(2)}`);
 
             detailsArea.innerHTML = `
                 <div class="space-y-4">
@@ -2666,20 +2593,16 @@
                         <h3 class="text-white text-lg font-bold mb-3">Price Breakdown</h3>
                         <div class="space-y-2">
                             <div class="flex justify-between">
-                                <span class="text-gray-400">Unit Price:</span>
-                                <span class="text-white font-medium">GHS${productInfo.unitPrice.toFixed(2)}</span>
-                            </div>
-                            <div class="flex justify-between">
                                 <span class="text-gray-400">Subtotal:</span>
-                                <span class="text-white font-medium">GHS${subtotal.toFixed(2)}</span>
+                                <span class="text-white font-medium">GHS${displaySubtotal.toFixed(2)}</span>
                             </div>
                             <div class="flex justify-between">
-                                <span class="text-gray-400">Service Fee:</span>
-                                <span class="text-white font-medium">GHS${serviceFee.toFixed(2)}</span>
+                                <span class="text-gray-400">Service Fee (GHS0.10 per item):</span>
+                                <span class="text-white font-medium">GHS${calculatedServiceFee.toFixed(2)}</span>
                             </div>
                             <div class="flex justify-between pt-2 border-t border-gray-700">
                                 <span class="text-white font-bold text-lg">Total:</span>
-                                <span class="text-white font-bold text-lg">GHS${total.toFixed(2)}</span>
+                                <span class="text-white font-bold text-lg">GHS${displayTotal.toFixed(2)}</span>
                             </div>
                         </div>
                     </div>
@@ -2800,7 +2723,6 @@
             currentOrderForDetails = null;
         }
 
-        // Download Order PDF Function
         function downloadOrderPDF() {
             if (!currentOrderForDetails) {
                 alert('No order details available for PDF download');
@@ -2845,12 +2767,18 @@
             yPosition += 10;
             
             doc.setFontSize(11);
-            doc.text(`Total: GHS${currentOrderForDetails.total ? currentOrderForDetails.total.toFixed(2) : '0.00'}`, 20, yPosition);
+            const subtotal = currentOrderForDetails.subtotal || 0;
+            const serviceFee = currentOrderForDetails.serviceFee || 0;
+            const total = currentOrderForDetails.total || 0;
+            doc.text(`Subtotal: GHS${subtotal.toFixed(2)}`, 20, yPosition);
+            yPosition += 8;
+            doc.text(`Service Fee: GHS${serviceFee.toFixed(2)}`, 20, yPosition);
+            yPosition += 8;
+            doc.text(`Total: GHS${total.toFixed(2)}`, 20, yPosition);
             
             doc.save(`order_${currentOrderForDetails.orderId || Date.now()}.pdf`);
         }
 
-        // Return Pickups Sheet Functions
         function openReturnPickupsSheet(order) {
             const sheet = document.getElementById('returnPickupsSheet');
             const content = document.getElementById('returnPickupsContent');
@@ -2879,7 +2807,6 @@
             }
         }
 
-        // Sliding Menu Functions
         function toggleMenu() {
             const menuOverlay = document.getElementById('menuOverlay');
             const slidingMenu = document.getElementById('slidingMenu');
@@ -2909,7 +2836,6 @@
             document.body.style.overflow = '';
         }
 
-        // Profile image functions
         function openProfileImagePicker() {
             document.getElementById('profileImageInput').click();
         }
@@ -2929,14 +2855,12 @@
             }
         }
 
-        // Logout function
         function logout() {
             localStorage.removeItem('userName');
             localStorage.removeItem('userEmail');
             window.location.href = 'signin.html';
         }
 
-        // Navigation State Management
         function saveCurrentPage() {
             localStorage.setItem('previousPage', window.location.pathname.split('/').pop());
         }
@@ -2946,7 +2870,6 @@
             window.location.href = page;
         }
 
-        // Handle browser back button
         window.addEventListener('popstate', function (event) {
             const previousPage = localStorage.getItem('previousPage');
             if (previousPage && previousPage !== window.location.pathname.split('/').pop()) {
@@ -2954,7 +2877,6 @@
             }
         });
 
-        // Initialize navigation state on page load
         document.addEventListener('DOMContentLoaded', function () {
             if (!localStorage.getItem('previousPage')) {
                 localStorage.setItem('previousPage', 'schedule-history.html');

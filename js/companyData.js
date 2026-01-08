@@ -142,8 +142,9 @@ class CompanyDataManager {
                 window.appwriteConfig.PRODUCTS_TABLE
             );
             console.log('📦 Raw product data from database:');
-            response.documents.forEach((p, index) => {
-                console.log(`📦 Product #${index + 1}: ${p.name} - Image: ${p.product_image || 'None'}`);
+            response.documents.forEach((doc, index) => {
+                const productName = doc.name || doc.product_name || doc.productName || 'Unknown Product';
+                console.log(`📦 Product #${index + 1}: ${productName} - Image: ${doc.product_image || doc.image || 'None'}`);
             });
             return response.documents;
         } catch (error) {
@@ -177,12 +178,19 @@ class CompanyDataManager {
                 );
 
                 // Get verification status for this company
-                const verification = this.verifications.find(v => v.company_id === branch.company_id);
-                const isVerified = verification && verification.status === 'verified';
+                const verification = this.verifications.find(v => {
+                    // Try all possible field names for company ID
+                    const companyId = v.company_id || v.companyId || v.companyID || v.company;
+                    return companyId === branch.company_id;
+                });
+                const verificationStatus = verification ? 
+                    (verification.status || verification.verification_status || verification.verificationStatus) : 
+                    null;
+                const isVerified = verificationStatus === 'verified';
                 
                 console.log(`🔍 Checking verification for company ${branch.company_id}:`);
                 console.log('- Found verification:', verification);
-                console.log('- Verification status:', verification ? verification.status : 'N/A');
+                console.log('- Verification status:', verificationStatus || 'N/A');
                 console.log('- isVerified:', isVerified);
                 console.log('- Branch name:', branch.branch_name);
                 
@@ -190,7 +198,9 @@ class CompanyDataManager {
                 if (this.verifications.length > 0) {
                     console.log('🔍 All verification records:');
                     this.verifications.forEach((v, i) => {
-                        console.log(`  ${i + 1}. company_id: ${v.company_id}, status: ${v.status}, $id: ${v.$id}`);
+                        const companyId = v.company_id || v.companyId || v.companyID;
+                        const status = v.status || v.verification_status || v.verificationStatus;
+                        console.log(`  ${i + 1}. company_id: ${companyId}, status: ${status}, $id: ${v.$id}`);
                     });
                 }
 
@@ -338,10 +348,18 @@ class CompanyDataManager {
             );
             console.log(`✅ Found ${response.documents.length} verification records:`);
             response.documents.forEach((doc, index) => {
+                // Log all available fields to understand the structure
                 console.log(`📋 Verification #${index + 1}:`, {
-                    company_id: doc.company_id,
-                    status: doc.status,
-                    $id: doc.$id
+                    $id: doc.$id,
+                    allFields: Object.keys(doc),
+                    fieldValues: {
+                        company_id: doc.company_id,
+                        companyId: doc.companyId,
+                        companyID: doc.companyID,
+                        status: doc.status,
+                        verification_status: doc.verification_status,
+                        verificationStatus: doc.verificationStatus
+                    }
                 });
             });
             return response.documents;

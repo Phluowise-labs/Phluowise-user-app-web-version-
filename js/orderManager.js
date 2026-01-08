@@ -165,9 +165,16 @@ class OrderManager {
                     console.log('🔍 Fallback orderItemId length:', uniqueOrderItemId.length);
                 }
 
-                // Get product name with fallbacks to handle undefined
-                const productName = item.name || item.productName || item.type || 'Unknown Product';
+                // Get product name with better fallbacks to handle undefined
+                let productName = item.name || item.productName || item.type || 'Unknown Product';
+                
+                // Handle case where name might be undefined or empty
+                if (!productName || productName === 'undefined' || productName.trim() === '') {
+                    productName = item.type || 'Service Product';
+                }
+                
                 console.log('🔍 Final product name to use:', productName);
+                console.log('🔍 Item details for debugging:', JSON.stringify(item));
 
                 const orderItem = {
                     orderItemId: uniqueOrderItemId,
