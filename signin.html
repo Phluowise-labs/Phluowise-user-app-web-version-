@@ -42,127 +42,131 @@
     </script>
 </head>
 
-<body class="bg-[#060606] h-screen flex flex-col items-center overflow-y-auto pb-10">
-    <div class="flex flex-col items-center w-full h-[20%] mt-4">
-        <!-- LogoSvg Mock -->
+<body class="bg-[#060606] min-h-screen flex flex-col items-center justify-center overflow-y-auto px-4 py-6">
+    <div class="w-full max-w-md mx-auto">
+        <!-- Logo Section -->
+        <div class="flex flex-col items-center text-center mb-8">
+            <!-- LogoSvg Mock -->
         <svg class="w-48 h-12" viewBox="0 0 194 47" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path fill="#3B74FF"
                 d="M2.429 37V9.056h11.024c2.12 0 3.925.405 5.417 1.215 1.492.8 2.629 1.914 3.411 3.342.792 1.42 1.187 3.057 1.187 4.913 0 1.855-.4 3.492-1.2 4.912-.8 1.419-1.96 2.524-3.48 3.315-1.51.791-3.338 1.187-5.485 1.187H6.276v-4.735h6.072c1.137 0 2.074-.195 2.81-.586.747-.4 1.302-.95 1.665-1.651.373-.71.56-1.524.56-2.442 0-.928-.186-1.738-.56-2.43-.363-.7-.918-1.24-1.664-1.623-.746-.391-1.692-.587-2.838-.587H8.337V37H2.429Zm30.58-12.116V37h-5.812V9.056h5.648V19.74h.246c.473-1.237 1.237-2.206 2.292-2.906 1.055-.71 2.379-1.065 3.97-1.065 1.456 0 2.725.319 3.808.955 1.091.628 1.937 1.533 2.537 2.716.61 1.173.91 2.578.9 4.216V37h-5.812V24.693c.01-1.292-.318-2.297-.982-3.016-.655-.718-1.574-1.078-2.756-1.078-.791 0-1.492.169-2.101.505a3.58 3.58 0 0 0-1.42 1.474c-.336.637-.509 1.405-.518 2.306ZM56.986 9.056V37h-5.813V9.056h5.813Zm18.096 19.02V16.043h5.812V37h-5.58v-3.807h-.219a6.188 6.188 0 0 1-2.36 2.961c-1.092.746-2.424 1.119-3.998 1.119-1.4 0-2.633-.319-3.698-.955-1.064-.637-1.896-1.542-2.497-2.715-.59-1.174-.891-2.58-.9-4.217V16.042h5.812V28.35c.01 1.238.342 2.215.996 2.934.655.719 1.533 1.078 2.634 1.078.7 0 1.355-.16 1.965-.478a3.75 3.75 0 0 0 1.473-1.446c.382-.637.569-1.424.56-2.36Zm19.93 9.333c-2.119 0-3.952-.45-5.498-1.35-1.537-.91-2.724-2.174-3.561-3.794-.837-1.628-1.256-3.515-1.256-5.662 0-2.165.419-4.057 1.256-5.676.837-1.628 2.024-2.893 3.56-3.793 1.547-.91 3.38-1.365 5.5-1.365 2.119 0 3.947.455 5.485 1.365 1.546.9 2.738 2.165 3.574 3.793.837 1.62 1.256 3.511 1.256 5.676 0 2.147-.419 4.034-1.256 5.662-.836 1.62-2.028 2.884-3.574 3.794-1.538.9-3.366 1.35-5.485 1.35Zm.028-4.502c.964 0 1.77-.273 2.415-.819.646-.555 1.132-1.31 1.46-2.265.336-.955.505-2.042.505-3.26 0-1.22-.169-2.307-.505-3.262-.328-.955-.814-1.71-1.46-2.265-.646-.555-1.45-.832-2.415-.832-.973 0-1.792.277-2.456.832-.655.555-1.15 1.31-1.487 2.265-.328.955-.492 2.042-.492 3.261 0 1.219.164 2.306.492 3.261.336.955.832 1.71 1.487 2.265.664.546 1.483.819 2.456.819ZM112.716 37l-5.703-20.958h5.881l3.247 14.081h.191l3.384-14.08h5.771l3.439 13.998h.177l3.193-13.999h5.867L132.473 37h-6.153l-3.603-13.18h-.259L118.856 37h-6.14Zm28.548 0V16.042h5.812V37h-5.812Zm2.919-23.66c-.864 0-1.605-.286-2.224-.859-.609-.582-.914-1.278-.914-2.088 0-.8.305-1.487.914-2.06a3.132 3.132 0 0 1 2.224-.873c.865 0 1.601.291 2.211.873.618.573.928 1.26.928 2.06 0 .81-.31 1.506-.928 2.088-.61.573-1.346.86-2.211.86Zm24.987 8.678-5.322.328a2.751 2.751 0 0 0-.586-1.228 3.114 3.114 0 0 0-1.187-.887c-.482-.227-1.06-.341-1.733-.341-.901 0-1.66.191-2.279.573-.618.373-.928.873-.928 1.5 0 .501.201.924.601 1.27.4.345 1.087.623 2.06.832l3.793.764c2.038.419 3.557 1.092 4.557 2.02 1.001.927 1.501 2.146 1.501 3.656 0 1.374-.405 2.58-1.214 3.616-.801 1.037-1.901 1.847-3.302 2.429-1.392.573-2.997.86-4.816.86-2.775 0-4.985-.578-6.632-1.733-1.637-1.165-2.597-2.748-2.879-4.749l5.717-.3c.173.846.592 1.492 1.256 1.938.664.436 1.514.654 2.551.654 1.019 0 1.838-.195 2.456-.586.628-.4.946-.914.955-1.542-.009-.528-.232-.96-.668-1.296-.437-.346-1.11-.61-2.02-.792l-3.629-.723c-2.047-.41-3.57-1.119-4.571-2.128-.991-1.01-1.487-2.297-1.487-3.862 0-1.346.364-2.506 1.091-3.479.737-.973 1.77-1.724 3.098-2.251 1.337-.528 2.901-.792 4.693-.792 2.647 0 4.73.56 6.249 1.679 1.529 1.119 2.42 2.642 2.675 4.57Zm13.688 15.391c-2.155 0-4.011-.436-5.566-1.31-1.547-.882-2.738-2.128-3.575-3.738-.837-1.62-1.256-3.534-1.256-5.744 0-2.156.419-4.048 1.256-5.676.837-1.629 2.015-2.898 3.534-3.807 1.528-.91 3.32-1.365 5.375-1.365 1.383 0 2.67.223 3.862.669a8.56 8.56 0 0 1 3.138 1.978c.901.883 1.601 1.992 2.101 3.33.501 1.328.751 2.883.751 4.666v1.596h-17.697v-3.602h12.225c0-.837-.182-1.578-.545-2.224a3.91 3.91 0 0 0-1.515-1.514c-.637-.373-1.378-.56-2.224-.56-.882 0-1.665.205-2.347.614-.673.4-1.201.942-1.583 1.624-.382.673-.577 1.424-.586 2.251v3.425c0 1.037.191 1.933.573 2.688a4.19 4.19 0 0 0 1.651 1.746c.709.41 1.551.614 2.524.614.646 0 1.237-.09 1.774-.273a3.686 3.686 0 0 0 1.378-.818c.382-.364.673-.81.873-1.337l5.376.355a7.341 7.341 0 0 1-1.678 3.383c-.837.955-1.92 1.701-3.248 2.238-1.319.527-2.842.791-4.571.791Z" />
             <circle cx="144.182" cy="11.046" r="3.362" fill="#2C9043" />
         </svg>
-        <h2 class="text-white capitalize font-semibold text-2xl mt-4">hello There</h2>
+        <h2 class="text-white capitalize font-semibold text-2xl mt-4">Hello There</h2>
         <p class="text-[17px] capitalize text-white font-normal mt-4 leading-5 text-center">
             Welcome back<br> please sign in!
         </p>
     </div>
 
-    <div class="mt-2 items-center gap-3 w-full p-6 flex-1">
-
-        <!-- Email Box -->
-        <div
-            class="border w-full rounded-2xl flex flex-row items-center px-5 gap-4 mt-3 h-[56px] border-[#292B2F] bg-[#000000] focus-within:border-[#007ACC] transition-colors">
-            <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-            </svg>
-            <input type="email" placeholder="Email Address"
-                class="bg-transparent border-none outline-none text-white text-xl font-normal w-[90%] placeholder-white/60">
-        </div>
-
-        <!-- Login method toggle -->
-        <div class="w-full mt-1">
-            <button class="px-2 py-1 text-[15px] capitalize text-white font-normal w-full text-left">
-                login with your phone instead
-            </button>
-        </div>
-
-        <!-- Password -->
-        <div
-            class="border w-full rounded-2xl flex flex-row items-center px-5 gap-4 mt-3 h-[56px] border-[#292B2F] bg-[#000000] focus-within:border-[#007ACC] transition-colors">
-            <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11.536 16 10.5 17.5 7.5 14.5 9 12l.257.257A6 6 0 1120 8z" />
-            </svg>
-            <input type="password" placeholder="Password"
-                class="bg-transparent border-none outline-none text-white text-xl font-normal w-[75.5%] placeholder-white/60">
-            <button>
-                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <!-- Form Section -->
+    <div class="bg-[#0a0a0a] rounded-2xl p-6 sm:p-8 shadow-2xl border border-[#292B2F]">
+        <form onsubmit="handleSignIn(event)" class="space-y-4">
+            <!-- Email Input -->
+            <div class="border border-[#292B2F] bg-[#000000] rounded-2xl flex items-center px-4 h-[56px] focus-within:border-[#007ACC] transition-all">
+                <svg class="w-5 h-5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                 </svg>
-            </button>
-        </div>
+                <input type="email" 
+                       id="emailInput"
+                       placeholder="Email Address"
+                       required
+                       class="bg-transparent border-none outline-none text-white text-base sm:text-xl font-normal w-full px-3 placeholder-white/60">
+            </div>
 
-        <!-- Forgot Password -->
-        <div class="w-full mt-1">
-            <button onclick="handleForgotPassword()" class="px-2 py-1 text-[15px] capitalize text-white font-normal w-full text-left">
-                forget your password?
-            </button>
-        </div>
+            <!-- Login Method Toggle -->
+            <div class="text-left">
+                <button type="button" onclick="toggleLoginMethod()" class="text-[15px] capitalize text-[#007ACC] font-normal hover:underline transition-colors">
+                    Login with your phone instead
+                </button>
+            </div>
 
-        <!-- Sign In Button -->
-        <div class="w-full flex flex-col gap-1 mt-3">
-            <button onclick="handleSignIn()"
-                class="h-[56px] mb-1 w-full rounded-2xl flex items-center justify-center border border-[#007ACC] bg-[#007ACC]/20 backdrop-blur-md">
-                <span class="text-white text-xl font-medium capitalize">Sign In</span>
+            <!-- Password Input -->
+            <div class="border border-[#292B2F] bg-[#000000] rounded-2xl flex items-center px-4 h-[56px] focus-within:border-[#007ACC] transition-all">
+                <svg class="w-5 h-5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11.536 16 10.5 17.5 7.5 14.5 9 12l.257.257A6 6 0 1120 8z" />
+                </svg>
+                <input type="password" 
+                       id="passwordInput"
+                       placeholder="Password"
+                       required
+                       class="bg-transparent border-none outline-none text-white text-base sm:text-xl font-normal w-full px-3 placeholder-white/60">
+                <button type="button" 
+                        id="togglePassword"
+                        class="text-gray-400 hover:text-white transition-colors p-1">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Forgot Password -->
+            <div class="text-left">
+                <button type="button" onclick="handleForgotPassword()" class="text-[15px] capitalize text-[#007ACC] font-normal hover:underline transition-colors">
+                    Forgot your password?
+                </button>
+            </div>
+
+            <!-- Sign In Button -->
+            <button type="submit" 
+                    class="h-[56px] w-full rounded-2xl flex items-center justify-center text-white text-xl font-medium capitalize backdrop-blur-xl bg-[#007ACC]/20 border border-[#007ACC]/50 shadow-lg hover:shadow-2xl transition-all duration-300 hover:bg-[#007ACC]/30 hover:border-[#007ACC]/70 hover:scale-[1.02] active:scale-[0.98]">
+                Sign In
             </button>
-        </div>
+        </form>
 
         <!-- Divider -->
-        <div class="flex flex-row items-center w-full mt-2 gap-3">
-            <div class="border-[0.8px] border-white grow"></div>
-            <span class="text-white mx-4 text-[16.5px] font-normal">Or, Sign In With</span>
-            <div class="border-[0.8px] border-white grow"></div>
+        <div class="flex items-center w-full my-6">
+            <div class="border-[0.8px] border-white/30 flex-1"></div>
+            <span class="text-white mx-4 text-[16px] font-normal">Or, Sign In With</span>
+            <div class="border-[0.8px] border-white/30 flex-1"></div>
         </div>
 
         <!-- Google Sign In -->
-        <div class="w-full flex flex-col gap-4 mt-2">
-            <button
-                class="border-[0.2px] border-[#292B2F] bg-[#000000]/20 backdrop-blur-md h-[56px] rounded-[10px] w-full flex items-center justify-center p-3">
-                <div class="flex flex-row items-center gap-3">
-                    <!-- Google Icon Mock -->
-                    <svg class="w-5 h-5" viewBox="0 0 21 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path
-                            fill="#FFC107"
-                            d="M20.006 8.1h-.78v-.04H10.5v3.879h5.48a5.815 5.815 0 0 1-11.297-1.94A5.817 5.817 0 0 1 10.5 4.184c1.483 0 2.832.559 3.859 1.473l2.742-2.742A9.65 9.65 0 0 0 10.5.304C5.146.305.805 4.647.805 10s4.341 9.695 9.695 9.695 9.695-4.341 9.695-9.695c0-.65-.067-1.285-.189-1.9Z"
-                        />
-                        <path
-                            fill="#4CAF50"
-                            d="M10.5 19.695a9.65 9.65 0 0 0 6.5-2.517l-3-2.54a5.773 5.773 0 0 1-3.5 1.179 5.814 5.814 0 0 1-5.47-3.852L1.87 14.4c1.604 3.14 4.862 5.294 8.63 5.294Z"
-                        />
-                        <path
-                            fill="#1976D2"
-                            d="M20.006 8.1h-.78v-.04H10.5v3.878h5.48a5.836 5.836 0 0 1-1.982 2.701h.001L17 17.176c-.212.193 3.195-2.33 3.195-7.177 0-.65-.067-1.285-.189-1.9Z"
-                        />
-                        <path
-                            fill="#FF3D00"
-                            d="m1.923 5.487 3.185 2.336a5.814 5.814 0 0 1 5.392-3.64c1.483 0 2.832.559 3.859 1.473l2.742-2.742A9.65 9.65 0 0 0 10.5.304a9.69 9.69 0 0 0-8.577 5.183Z"
-                        />
-                    </svg>
-                    <span class="text-[16.5px] font-normal text-white capitalize">Sign in with google</span>
-                </div>
-            </button>
-        </div>
+        <button class="border border-[#292B2F] bg-[#000000]/20 backdrop-blur-md h-[56px] rounded-2xl w-full flex items-center justify-center p-3 hover:bg-[#000000]/30 transition-all duration-300">
+            <div class="flex items-center gap-3">
+                <!-- Google Icon -->
+                <svg class="w-5 h-5" viewBox="0 0 21 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path
+                        fill="#FFC107"
+                        d="M20.006 8.1h-.78v-.04H10.5v3.879h5.48a5.815 5.815 0 0 1-11.297-1.94A5.817 5.817 0 0 1 10.5 4.184c1.483 0 2.832.559 3.859 1.473l2.742-2.742A9.65 9.65 0 0 0 10.5.304C5.146.305.805 4.647.805 10s4.341 9.695 9.695 9.695 9.695-4.341 9.695-9.695c0-.65-.067-1.285-.189-1.9Z"
+                    />
+                    <path
+                        fill="#4CAF50"
+                        d="M10.5 19.695a9.65 9.65 0 0 0 6.5-2.517l-3-2.54a5.773 5.773 0 0 1-3.5 1.179 5.814 5.814 0 0 1-5.47-3.852L1.87 14.4c1.604 3.14 4.862 5.294 8.63 5.294Z"
+                    />
+                    <path
+                        fill="#1976D2"
+                        d="M20.006 8.1h-.78v-.04H10.5v3.878h5.48a5.836 5.836 0 0 1-1.982 2.701h.001L17 17.176c-.212.193 3.195-2.33 3.195-7.177 0-.65-.067-1.285-.189-1.9Z"
+                    />
+                    <path
+                        fill="#FF3D00"
+                        d="m1.923 5.487 3.185 2.336a5.814 5.814 0 0 1 5.392-3.64c1.483 0 2.832.559 3.859 1.473l2.742-2.742A9.65 9.65 0 0 0 10.5.304a9.69 9.69 0 0 0-8.577 5.183Z"
+                    />
+                </svg>
+                <span class="text-[16px] font-normal text-white capitalize">Sign in with Google</span>
+            </div>
+        </button>
 
         <!-- Sign Up Link -->
-        <div class="mt-6 mb-4 text-center">
-            <p class="text-base font-normal text-white">Dont't have an account?
-                <a href="signup.html" class="text-[#007ACC] font-semibold ml-1 capitalize">Sign Up</a>
+        <div class="mt-6 text-center">
+            <p class="text-base font-normal text-white">
+                Don't have an account?
+                <a href="signup.html" class="text-[#007ACC] font-semibold ml-1 capitalize hover:underline transition-colors">Sign Up</a>
             </p>
         </div>
 
         <!-- Terms -->
-        <div class="mb-2 text-center">
-            <p class="text-xs font-normal text-white">
+        <div class="mt-4 text-center">
+            <p class="text-xs font-normal text-white/80">
                 By signing in you agree to our
-                <a href="#" onclick="showTermsModal()" class="text-[#007ACC] underline">Terms of Service</a> and
-                <a href="#" onclick="showPrivacyModal()" class="text-[#007ACC] underline">Privacy Policy</a>
+                <a href="#" onclick="showTermsModal()" class="text-[#007ACC] underline hover:text-[#0056b3] transition-colors">Terms of Service</a> and
+                <a href="#" onclick="showPrivacyModal()" class="text-[#007ACC] underline hover:text-[#0056b3] transition-colors">Privacy Policy</a>
             </p>
         </div>
-
-    </div>
     </div>
 
     <!-- Terms Modal -->
@@ -228,9 +232,11 @@
     <script src="js/auth.js"></script>
 
     <script>
-        function handleSignIn() {
-            const email = document.querySelector('input[type="email"]').value;
-            const password = document.querySelector('input[type="password"]').value;
+        function handleSignIn(event) {
+            event.preventDefault(); // Prevent form submission
+            
+            const email = document.getElementById('emailInput').value;
+            const password = document.getElementById('passwordInput').value;
             
             if (!email || !password) {
                 feedback.error('Please enter both email and password');
@@ -245,7 +251,7 @@
         }
 
         function handleForgotPassword() {
-            const email = document.querySelector('input[type="email"]').value;
+            const email = document.getElementById('emailInput').value;
             
             if (!email) {
                 feedback.error('Please enter your email address first');
@@ -259,9 +265,14 @@
             }
         }
 
+        function toggleLoginMethod() {
+            // Placeholder for phone login functionality
+            feedback.info('Phone login coming soon!');
+        }
+
         // Toggle password visibility
-        document.querySelector('button').addEventListener('click', function() {
-            const passwordInput = document.querySelector('input[type="password"]');
+        document.getElementById('togglePassword').addEventListener('click', function() {
+            const passwordInput = document.getElementById('passwordInput');
             const icon = this.querySelector('svg');
             
             if (passwordInput.type === 'password') {
@@ -274,6 +285,23 @@
                 icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>';
             }
         });
+
+        // Modal functions
+        function showTermsModal() {
+            document.getElementById('termsModal').classList.remove('hidden');
+        }
+
+        function closeTermsModal() {
+            document.getElementById('termsModal').classList.add('hidden');
+        }
+
+        function showPrivacyModal() {
+            document.getElementById('privacyModal').classList.remove('hidden');
+        }
+
+        function closePrivacyModal() {
+            document.getElementById('privacyModal').classList.add('hidden');
+        }
 
         // Check session on page load
         document.addEventListener('DOMContentLoaded', async function() {

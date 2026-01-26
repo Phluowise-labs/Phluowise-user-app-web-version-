@@ -711,19 +711,88 @@
             }
         });
 
-        // Logout - Use the same logout as profile page
-        function logout() {
+        // Logout function
+        async function logout() {
             console.log('Menu logout clicked');
-            console.log('signOut function available:', typeof signOut);
-            console.log('account object available:', typeof account);
-            console.log('feedback object available:', typeof feedback);
             
-            if (typeof signOut === 'function') {
-                console.log('Calling signOut()...');
-                signOut();
-            } else {
-                console.log('signOut not available, redirecting to signin.html');
-                window.location.href = 'signin.html';
+            // Get the logout button and show loading state
+            const logoutBtn = document.querySelector('button[onclick="logout()"]');
+            const originalContent = logoutBtn.innerHTML;
+            
+            // Show loading indicator
+            logoutBtn.innerHTML = `
+                <div class="flex flex-row items-center gap-[30px]">
+                    <div class="w-6 h-6 flex items-center justify-center">
+                        <div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                    <span class="text-white text-lg font-semibold">Signing out...</span>
+                </div>
+                <div class="w-5 h-5 flex items-center justify-center">
+                    <div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                </div>
+            `;
+            logoutBtn.disabled = true;
+            
+            try {
+                // Clear all local storage data
+                localStorage.removeItem('customerSession');
+                localStorage.removeItem('currentUser');
+                localStorage.removeItem('userName');
+                localStorage.removeItem('userEmail');
+                
+                // Try to clear Appwrite session if available
+                if (typeof account !== 'undefined') {
+                    try {
+                        await account.deleteSession('current');
+                        console.log('Appwrite session cleared');
+                    } catch (appwriteError) {
+                        console.log('Appwrite session already cleared or error:', appwriteError);
+                    }
+                }
+                
+                // Show success briefly before redirect
+                logoutBtn.innerHTML = `
+                    <div class="flex flex-row items-center gap-[30px]">
+                        <svg class="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                        <span class="text-white text-lg font-semibold">Signed out!</span>
+                    </div>
+                    <svg class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                `;
+                
+                // Redirect to signin page after brief delay
+                setTimeout(() => {
+                    console.log('Redirecting to signin.html');
+                    window.location.href = 'signin.html';
+                }, 500);
+                
+            } catch (error) {
+                console.error('Logout error:', error);
+                
+                // Show error state
+                logoutBtn.innerHTML = `
+                    <div class="flex flex-row items-center gap-[30px]">
+                        <svg class="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                        <span class="text-white text-lg font-semibold">Error</span>
+                    </div>
+                    <svg class="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                `;
+                
+                // Even if there's an error, clear storage and redirect after brief delay
+                setTimeout(() => {
+                    localStorage.removeItem('customerSession');
+                    localStorage.removeItem('currentUser');
+                    localStorage.removeItem('userName');
+                    localStorage.removeItem('userEmail');
+                    window.location.href = 'signin.html';
+                }, 1000);
             }
         }
     </script>
